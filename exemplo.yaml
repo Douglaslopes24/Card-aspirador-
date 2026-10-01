@@ -1,0 +1,37 @@
+# Configuração mínima — substitua pelo ID real do seu aspirador.
+type: custom:aspirador-vivo-card
+entity: vacuum.seu_aspirador
+name: Aspirador Vivo
+
+# Sensores opcionais. Descomente e substitua pelos seus IDs.
+# battery_entity: sensor.seu_aspirador_bateria
+# cleaning_time_entity: sensor.seu_aspirador_tempo_de_limpeza
+# mop_time_entity: sensor.seu_aspirador_tempo_dos_mops
+
+# O sensor usa sua própria unidade, como min, s, h ou %.
+# Para um atributo do aspirador, defina o nome e a unidade no YAML.
+# cleaning_time_attribute: cleaning_time
+# cleaning_time_unit: min
+# mop_time_attribute: mop_time_left
+# mop_time_unit: min
+# mop_label: "Mops · tempo restante"
+
+# show_controls: true
+# animation: true
+# sound: true
+# sound_volume: 0.18
+# cycle_seconds: 18
+
+# Botões personalizados — substitua pelos scripts reais do seu aparelho.
+# Também podem ser criados no editor visual do cartão.
+# custom_buttons:
+#   - name: Limpar sala
+#     icon: room
+#     entity: script.aspirador_limpar_sala
+#   - name: Limpar cozinha
+#     icon: kitchen
+#     entity: script.aspirador_limpar_cozinha
+#   - name: Limpar com mops
+#     icon: mop
+#     entity: script.aspirador_limpar_com_mops
+#     icon_image: /local/icones/meus-mops.svg

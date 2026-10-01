@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aspirador Vivo — demonstração</title><style>html{color-scheme:light dark}body{margin:0;background:light-dark(#e9f0f4,#101d27)}</style></head><body>
+<div id="aspirador-vivo-preview" class="viz-dotted-background">
+  <style>
+    #aspirador-vivo-preview { color-scheme:inherit; padding:54px 12px 22px; font-family:Roboto,Arial,sans-serif; }
+    #aspirador-vivo-preview .demo-shell { width:100%; max-width:430px; margin:auto; }
+    #aspirador-vivo-preview .demo-caption { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:0 5px 14px; color:light-dark(#536a77,#b4c7d2); font-size:12px; }
+    #aspirador-vivo-preview .demo-state { font-weight:500; }
+    #aspirador-vivo-preview aspirador-vivo-card { --primary-color:light-dark(#167f74,#7bd6c7); --primary-text-color:light-dark(#233b48,#e9f2f7); --secondary-text-color:light-dark(#536a77,#afc3cf); --text-primary-color:light-dark(#fff,#14322d); --ha-card-background:light-dark(#f9fcfd,#172a36); }
+  </style>
+  <div class="demo-shell">
+    <div class="demo-caption"><span>Demonstração · valores simulados</span><span class="demo-state" role="status" aria-live="polite">Na base</span></div>
+    <aspirador-vivo-card></aspirador-vivo-card>
+  </div>
+</div>
+
+<script src="aspirador-vivo-card.js"></script>
+<script src="demo-controller.js"></script>
+</body></html>
