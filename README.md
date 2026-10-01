@@ -8,10 +8,26 @@ Os botões reproduzem um som curto de seleção no celular, tablet ou navegador 
 
 Pausa mantém o aspirador na posição da animação. Retorno mostra o robô se aproximando da base; o estado **Na base** só aparece quando o Home Assistant informa `docked`. O estado `idle` aparece como **Parado**, próximo à base. Erro e indisponibilidade interrompem o movimento.
 
+## Instalação pelo HACS
+
+1. Abra **HACS → menu ⋮ → Repositórios personalizados**.
+2. Em **Repository**, cole `https://github.com/Douglaslopes24/Card-aspirador-`.
+3. Em **Type**, escolha **Dashboard**. Em versões antigas, a categoria pode aparecer como **Plugin** ou **Frontend**. O Aspirador Vivo é um cartão de painel; selecionar **Integration** causa a mensagem de estrutura incompatível.
+4. Clique em **Add**, procure **Aspirador Vivo** no HACS e baixe o card. Se aparecer uma escolha de versão, selecione **main**.
+5. Recarregue o navegador ou aplicativo. No seu painel, selecione **Editar painel → Adicionar cartão → Aspirador Vivo** e escolha a entidade `vacuum.*` do robô. Se preferir, use o cartão **Manual** com o YAML mínimo abaixo.
+
+O HACS usa `hacs.json` para identificar o arquivo `dist/Card-aspirador-.js`. Esse arquivo inclui o card, o editor, as animações, os ícones e os sons. A instalação pelo HACS usa o recurso:
+
+```text
+/hacsfiles/Card-aspirador-/Card-aspirador-.js
+```
+
+Confira **Configurações → Painéis → Recursos**. Se o HACS não tiver criado a entrada automaticamente, adicione esse caminho como **Módulo JavaScript**. Em painéis gerenciados por YAML, configure o recurso no próprio painel. Se você já instalou manualmente, depois de baixar pelo HACS deixe apenas o novo recurso e remova a entrada antiga `/local/aspirador-vivo-card.js` dessa lista. Recarregue o navegador/aplicativo após alterar os recursos.
+
 ## Instalação manual
 
 1. Copie `aspirador-vivo-card.js` para `/config/www/aspirador-vivo-card.js` no Home Assistant. Crie a pasta `www` se necessário.
-2. Em **Configurações → Painéis → Recursos**, adicione `/local/aspirador-vivo-card.js?v=1.2.0`, tipo **Módulo JavaScript**. A opção Recursos pode exigir o modo avançado do seu perfil. Se seu painel é gerenciado por YAML, adicione o recurso na configuração desse painel.
+2. Em **Configurações → Painéis → Recursos**, adicione `/local/aspirador-vivo-card.js?v=1.2.1`, tipo **Módulo JavaScript**. A opção Recursos pode exigir o modo avançado do seu perfil. Se seu painel é gerenciado por YAML, adicione o recurso na configuração desse painel.
 3. Recarregue o navegador ou aplicativo. Adicione **Aspirador Vivo** na seleção de cartões. Se preferir, use **Manual** e cole o conteúdo de `exemplo.yaml`.
 4. Escolha a entidade `vacuum.*` e, se disponíveis, os sensores da bateria, do tempo de limpeza e dos mops. O card já inclui editor visual.
 
@@ -124,16 +140,18 @@ Os controles nativos respeitam os recursos publicados pela entidade `vacuum`. Po
 
 Abra `demo.html` no navegador. Os estados, comandos, bateria e tempos são simulados localmente e não controlam nenhum aparelho. Use **Iniciar limpeza** para ver a animação original e a saída da base; **Pausar** congela o aspirador e **Voltar à base** mostra o retorno. Use **Mais controles** para testar os ícones, a potência e os atalhos de sala, cozinha e mops. Os botões têm som de seleção. Esses três scripts são apenas exemplos simulados na demonstração.
 
-Para executar a validação funcional no repositório, use `npm test` ou `node tests/verify-card.cjs`. O teste não depende de pacotes externos.
+Para executar a validação funcional do arquivo instalado pelo HACS, use `npm test`. O teste não depende de pacotes externos. Ao modificar `aspirador-vivo-card.js`, execute `npm run build` para atualizar `dist/Card-aspirador-.js`, seguido de `npm test` e `npm run check`. A validação também confere que o arquivo do HACS é idêntico ao código do card.
 
 ## Se o cartão não aparecer
 
-Confira o caminho do arquivo e o recurso do tipo **Módulo JavaScript**. Abra `/local/aspirador-vivo-card.js?v=1.2.0` no seu Home Assistant: deve aparecer o código, sem erro 404. Depois recarregue o aplicativo e adicione o tipo exato `custom:aspirador-vivo-card`. Ao atualizar da versão anterior, substitua o arquivo, mude o recurso para `?v=1.2.0` e recarregue o navegador/aplicativo.
+Confira o caminho do arquivo e o recurso do tipo **Módulo JavaScript**. Pelo HACS, abra `/hacsfiles/Card-aspirador-/Card-aspirador-.js` no seu Home Assistant; pela instalação manual, abra `/local/aspirador-vivo-card.js?v=1.2.1`. Deve aparecer o código, sem erro 404. Depois recarregue o aplicativo e adicione o tipo exato `custom:aspirador-vivo-card`. Ao atualizar uma instalação manual, substitua o arquivo, mude o recurso para `?v=1.2.1` e recarregue o navegador/aplicativo. Pelo HACS, use a opção de atualização ou baixe novamente o card.
 
 ## Referências
 
 - [Cards personalizados — documentação oficial](https://developers.home-assistant.io/docs/frontend/custom-ui/custom-card/)
 - [Vacuum — estados e ações oficiais](https://www.home-assistant.io/integrations/vacuum/)
 - [Entidade vacuum — recursos e estados](https://developers.home-assistant.io/docs/core/entity/vacuum/)
+- [Repositórios personalizados no HACS](https://www.hacs.dev/docs/faq/custom_repositories/)
+- [Cards de painel no HACS](https://www.hacs.dev/docs/publish/plugin/)
 
-Versão 1.2.0. Código: [Douglaslopes24/Card-aspirador-](https://github.com/Douglaslopes24/Card-aspirador-). A instalação na sua instância do Home Assistant é feita pelos passos acima.
+Versão 1.2.1. Código: [Douglaslopes24/Card-aspirador-](https://github.com/Douglaslopes24/Card-aspirador-). A instalação na sua instância do Home Assistant é feita pelos passos acima.

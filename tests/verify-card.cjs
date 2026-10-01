@@ -5,6 +5,7 @@ const vm=require('vm');
 const path=require('node:path');
 const projectRoot=fs.existsSync(path.join(__dirname,'aspirador-vivo/aspirador-vivo-card.js')) ? path.join(__dirname,'aspirador-vivo') : path.resolve(__dirname,'..');
 const readProject=name=>fs.readFileSync(path.join(projectRoot,name),'utf8');
+const productionFilename=process.argv[2] || 'aspirador-vivo-card.js';
 const assert=require('node:assert/strict');
 let checks=0;
 const check=(condition,label)=>{assert.ok(condition,label);checks++;};
@@ -73,7 +74,7 @@ const media={matches:false,addEventListener(){},removeEventListener(){}};
 class HTMLElement extends Element{attachShadow(){this.shadowRoot=new Element('shadow');return this.shadowRoot;}}
 class ResizeObserver{constructor(fn){this.fn=fn;}observe(){}disconnect(){this.disconnected=true;}}
 const context=vm.createContext({HTMLElement,ResizeObserver,document,window:{matchMedia:()=>media},customElements:{define:(n,C)=>registry.set(n,C),get:n=>registry.get(n)},DOMMatrixReadOnly:Matrix,getComputedStyle:e=>({transform:currentTransform(e)}),CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}},Intl,console});
-vm.runInContext(readProject('aspirador-vivo-card.js'),context);
+vm.runInContext(readProject(productionFilename),context);
 const C=registry.get('aspirador-vivo-card');
 check(!!C&&registry.has('aspirador-vivo-card-editor'),'custom elements registered');
 check(context.window.customCards[0].type==='aspirador-vivo-card','card picker registration');
@@ -269,7 +270,7 @@ check(card._motion===null,'system reduced motion');media.matches=false;
  await preview._act('primary');check(preview._mode==='paused','preview pause interaction');
  await preview._act('return');check(preview._mode==='returning','preview return interaction');timeout();
  check(preview._mode==='docked'&&demoStatus.textContent==='Na base','preview finishes return');
- vm.runInContext(readProject('aspirador-vivo-card.js'),context);
+ vm.runInContext(readProject(productionFilename),context);
  check(context.window.customCards.length===1,'reload does not duplicate registration');
  preview.disconnectedCallback();
  console.log(`${checks} functional checks passed. Browser layout has not been rendered by these tests.`);

@@ -1,10 +1,11 @@
 {
   "name": "card-aspirador",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Card animado para Home Assistant com controles personalizados e som de seleção.",
   "scripts": {
-    "test": "node tests/verify-card.cjs",
-    "check": "node --check aspirador-vivo-card.js && node --check demo-controller.js"
+    "build": "node scripts/build.cjs",
+    "test": "node scripts/build.cjs --check && node tests/verify-card.cjs dist/Card-aspirador-.js",
+    "check": "node --check dist/Card-aspirador-.js && node --check demo-controller.js && node --check scripts/build.cjs"
   }
 }
