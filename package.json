@@ -1,6 +1,6 @@
 {
-  "name": "card-aspirador",
-  "version": "1.2.1",
+  "name": "vaccum-card-animations",
+  "version": "1.3.0",
   "private": true,
   "description": "Card animado para Home Assistant com controles personalizados e som de seleção.",
   "scripts": {

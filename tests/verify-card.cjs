@@ -10,8 +10,14 @@ const assert=require('node:assert/strict');
 let checks=0;
 const check=(condition,label)=>{assert.ok(condition,label);checks++;};
 const dataKey=k=>k.slice(5).replace(/-([a-z])/g,(_,c)=>c.toUpperCase());
+class Style {
+  constructor(){this.properties=new Map();}
+  setProperty(key,value){this.properties.set(key,String(value));}
+  getPropertyValue(key){return this.properties.get(key)||'';}
+  removeProperty(key){const value=this.getPropertyValue(key);this.properties.delete(key);return value;}
+}
 class Element {
-  constructor(tag='element'){this.tagName=tag;this.children=[];this.attributes={};this.dataset={};this.style={};this.events={};this.clientWidth=414;this.clientHeight=248;this.isConnected=true;this.hidden=false;this._text='';}
+  constructor(tag='element'){this.tagName=tag;this.children=[];this.attributes={};this.dataset={};this.style=new Style();this.events={};this.clientWidth=414;this.clientHeight=248;this.isConnected=true;this.hidden=false;this._text='';}
   set innerHTML(html){
     this.children=[];
     const content=html.replace(/<style>[\s\S]*?<\/style>/g,'');
@@ -70,10 +76,19 @@ class Matrix {constructor(t){const p=poseFromTransform(t);this.m41=p.x;this.m42=
 const registry=new Map();
 const listeners={};
 const document={hidden:false,createElement(tag){const C=registry.get(tag);return C?new C():new Element(tag);},addEventListener(n,fn){listeners[n]=fn;},removeEventListener(n){delete listeners[n];}};
-const media={matches:false,addEventListener(){},removeEventListener(){}};
-class HTMLElement extends Element{attachShadow(){this.shadowRoot=new Element('shadow');return this.shadowRoot;}}
+const makeMedia=()=>({matches:false,listeners:new Set(),addEventListener(name,callback){this.listeners.add(callback);},removeEventListener(name,callback){this.listeners.delete(callback);}});
+const media=makeMedia(),colorMedia=makeMedia();
+const stored=new Map();
+const storage={blocked:false,writes:0,getItem(key){if(this.blocked)throw new Error('Storage blocked');return stored.get(key)||null;},setItem(key,value){if(this.blocked)throw new Error('Storage blocked');this.writes++;stored.set(key,String(value));},removeItem(key){if(this.blocked)throw new Error('Storage blocked');stored.delete(key);}};
+function inheritedProperty(element,key){for(let node=element;node;node=node.parent){const value=node.style.getPropertyValue(key);if(value)return value;}return '';}
+function resolveCss(value,element,depth=0){
+ if(depth>10)return '';
+ return String(value||'').replace(/var\(\s*(--[\w-]+)\s*(?:,\s*([^()]+))?\)/g,(_,key,fallback)=>resolveCss(inheritedProperty(element,key)||fallback||'',element,depth+1));
+}
+function computedStyle(element){return {transform:currentTransform(element),color:resolveCss(element.style.color||'rgb(0, 0, 0)',element),getPropertyValue:key=>resolveCss(inheritedProperty(element,key),element)};}
+class HTMLElement extends Element{attachShadow(){this.shadowRoot=new Element('shadow');this.shadowRoot.parent=this;return this.shadowRoot;}}
 class ResizeObserver{constructor(fn){this.fn=fn;}observe(){}disconnect(){this.disconnected=true;}}
-const context=vm.createContext({HTMLElement,ResizeObserver,document,window:{matchMedia:()=>media},customElements:{define:(n,C)=>registry.set(n,C),get:n=>registry.get(n)},DOMMatrixReadOnly:Matrix,getComputedStyle:e=>({transform:currentTransform(e)}),CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}},Intl,console});
+const context=vm.createContext({HTMLElement,ResizeObserver,document,window:{matchMedia:query=>query.includes('color-scheme')?colorMedia:media,localStorage:storage,location:{pathname:'/lovelace/demo'}},customElements:{define:(n,C)=>registry.set(n,C),get:n=>registry.get(n)},DOMMatrixReadOnly:Matrix,getComputedStyle:computedStyle,CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}},Intl,console});
 vm.runInContext(readProject(productionFilename),context);
 const C=registry.get('aspirador-vivo-card');
 check(!!C&&registry.has('aspirador-vivo-card-editor'),'custom elements registered');
@@ -251,6 +266,118 @@ check(card._motion===null,'system reduced motion');media.matches=false;
  const silent=new C();silent.setConfig({entity:'vacuum.test'});silent.connectedCallback();silent.hass=soundHass();const silentBefore=commands.length;
  silent.shadowRoot.querySelector('[data-action="primary"]').dispatchEvent({type:'click'});await flush();
  check(commands.length===silentBefore+1&&!silent._audio,'actions work when Web Audio is unavailable');silent.disconnectedCallback();
+ // Calculate contrast independently from the card's color helper.
+ const lightness=color=>{
+  const channels=[1,3,5].map(index=>parseInt(color.slice(index,index+2),16)/255).map(value=>value<=.04045?value/12.92:((value+.055)/1.055)**2.4);
+  return channels[0]*.2126+channels[1]*.7152+channels[2]*.0722;
+ };
+ const ratio=(first,second)=>{const a=lightness(first),b=lightness(second);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);};
+ const readable=(instance,label)=>{
+  const surface=instance.shadowRoot.querySelector('ha-card').style;
+  const bg=surface.getPropertyValue('--av-bg'),floor=surface.getPropertyValue('--av-floor');
+  check(/^#[a-f0-9]{6}$/.test(bg)&&/^#[a-f0-9]{6}$/.test(floor),`${label}: opaque card and floor colors`);
+  for(const token of ['ink','muted','values','error'])check(Math.min(ratio(surface.getPropertyValue('--av-'+token),bg),ratio(surface.getPropertyValue('--av-'+token),floor))>=4.5,`${label}: readable ${token} on both surfaces`);
+  check(ratio(surface.getPropertyValue('--av-button-ink'),surface.getPropertyValue('--av-accent'))>=4.5,`${label}: readable primary button`);
+ };
+ const appearance=new C();appearance.setConfig({entity:'vacuum.test',appearance_id:'appearance-tests'});appearance.connectedCallback();
+ const aq=selector=>appearance.shadowRoot.querySelector(selector);
+ const withThemes=(darkMode=false,themes={})=>({...makeHass('cleaning'),themes:{darkMode,themes}});
+ appearance.style.setProperty('--ha-card-background','#13202b');
+ appearance.style.setProperty('--primary-text-color','#20303b');
+ appearance.style.setProperty('--secondary-text-color','#26353b');
+ appearance.hass=withThemes(true);
+ check(aq('.appearance-theme').value==='auto'&&appearance._resolvedPalette.bg==='#13202b','automatic appearance inherits HA card background');
+ readable(appearance,'low-contrast inherited theme');
+ check(context.window.customCards[0].name==='Vaccum card-animations'&&C.getStubConfig().name==='Vaccum card-animations'&&aq('.name').textContent==='Vaccum card-animations','requested card name used in defaults and picker');
+ check(JSON.parse(readProject('hacs.json')).name==='Vaccum card-animations','HACS display name matches requested name');
+ const motionBeforeTheme=appearance._motion,commandsBeforeTheme=commands.length;
+ aq('.appearance-theme').value='light';aq('.appearance-theme').dispatchEvent({type:'change'});
+ check(appearance._resolvedPalette.bg==='#f8fafb'&&aq('ha-card').style.colorScheme==='light','light preset stays light with inherited dark HA theme');
+ check(appearance._motion===motionBeforeTheme&&commands.length===commandsBeforeTheme,'theme selection neither restarts motion nor commands the robot');
+ readable(appearance,'light preset');
+ check(JSON.parse(stored.get(appearance._appearanceStorageKey)).settings.theme==='light','theme choice persists');
+ aq('.appearance-theme').value='dark';aq('.appearance-theme').dispatchEvent({type:'change'});
+ readable(appearance,'dark preset');
+ check(appearance._resolvedPalette.bg==='#17212b'&&aq('ha-card').style.colorScheme==='dark','dark preset uses matching opaque surfaces');
+ const mainColor=aq('[data-appearance="text_color"]'),labelColor=aq('[data-appearance="secondary_text_color"]'),valueColor=aq('[data-appearance="value_color"]');
+ const writesBeforeLive=storage.writes;mainColor.value='#ffdd80';mainColor.dispatchEvent({type:'input'});
+ check(appearance._resolvedPalette.ink==='#ffdd80'&&storage.writes===writesBeforeLive&&mainColor.value==='#ffdd80','color picker previews a readable color without saving on every input');
+ mainColor.dispatchEvent({type:'change'});
+ check(storage.writes===writesBeforeLive+1&&JSON.parse(stored.get(appearance._appearanceStorageKey)).settings.text_color==='#ffdd80','committed color is saved');
+ labelColor.value='#17212b';labelColor.dispatchEvent({type:'change'});valueColor.value='#17212b';valueColor.dispatchEvent({type:'change'});
+ readable(appearance,'manual low-contrast colors');
+ check(!aq('.appearance-adjusted').hidden&&aq('.appearance-adjusted').textContent.includes('ajustada'),'manual low contrast is visibly explained');
+ check(commands.length===commandsBeforeTheme&&appearance._motion===motionBeforeTheme,'all appearance controls remain local while cleaning');
+ const reloaded=new C();reloaded.setConfig({entity:'vacuum.test',appearance_id:'appearance-tests'});
+ check(reloaded._appearance.theme==='dark'&&reloaded._appearance.text_color==='#ffdd80','new card instance restores saved settings');
+ const separate=new C();separate.setConfig({entity:'vacuum.test',appearance_id:'separate-card'});
+ check(separate._appearance.theme==='auto'&&separate._appearance.text_color==='','appearance identity isolates different cards');
+ reloaded.setConfig({entity:'vacuum.test',appearance_id:'appearance-tests',theme:'light',text_color:'#345678'});
+ check(reloaded._appearance.theme==='light'&&reloaded._appearance.text_color==='#345678','new configured defaults override older saved appearance');
+ aq('.appearance-reset').dispatchEvent({type:'click'});
+ check(appearance._appearance.theme==='auto'&&appearance._appearance.text_color===''&&!stored.has(appearance._appearanceStorageKey),'reset restores configured defaults and removes stored settings');
+ const namedThemes={
+  Oceano:{'ha-card-background':'var(--primary-background-color)','primary-background-color':'#03253a','primary-text-color':'var(--custom-ink)','custom-ink':'#e4f6fb','secondary-text-color':'#a6c3d1',modes:{dark:{'primary-color':'#70cbea'}}},
+  Alternado:{modes:{light:{'ha-card-background':'#faf2eb'},dark:{'ha-card-background':'#30231b'}}},
+  Transparente:{'ha-card-background':'rgba(255,255,255,0.5)',modes:{dark:{}}},
+  '<img src=x>':{'ha-card-background':'#112233'}
+ };
+ appearance.hass=withThemes(false,namedThemes);appearance._changeAppearance('theme','ha:Oceano',true);
+ check(appearance._resolvedPalette.bg==='#03253a'&&appearance._resolvedPalette.ink==='#e4f6fb'&&aq('ha-card').style.colorScheme==='dark','named dark-only HA theme uses scoped CSS variable aliases and overrides global light mode');
+ readable(appearance,'named dark theme');
+ check(appearance.style.getPropertyValue('--ha-card-background')==='#13202b'&&commands.length===commandsBeforeTheme,'named theme leaves host variables and device state intact');
+ check(aq('.appearance-theme').children.some(option=>option.textContent==='<img src=x>'&&!option.querySelector('img')),'HA theme names are text rather than HTML');
+ appearance._changeAppearance('theme','ha:Alternado',false);
+ check(appearance._resolvedPalette.bg==='#faf2eb','named multi-mode theme selects HA light mode');
+ const modeMotion=appearance._motion;appearance.hass=withThemes(true,namedThemes);
+ check(appearance._resolvedPalette.bg==='#30231b'&&appearance._motion===modeMotion,'HA dark-mode change switches named palette without restarting motion');
+ appearance._changeAppearance('theme','ha:Transparente',false);
+ check(appearance._resolvedPalette.bg==='#8b9095','transparent theme background is composited into an opaque surface');
+ readable(appearance,'composited theme');
+ appearance._changeAppearance('theme','ha:Removido',false);
+ check(appearance._resolvedPalette.bg==='#13202b'&&aq('.appearance-theme').children.some(option=>option.value==='ha:Removido')&&!aq('.appearance-adjusted').hidden,'missing named theme falls back visibly and retains the selection');
+ const invalidAppearance=JSON.stringify(appearance._appearance),invalidWrites=storage.writes;
+ appearance._changeAppearance('text_color','red;display:none',true);appearance._changeAppearance('__proto__','#ffffff',true);
+ check(JSON.stringify(appearance._appearance)===invalidAppearance&&storage.writes===invalidWrites,'invalid colors and unknown appearance fields are ignored');
+ appearance.setConfig({entity:'vacuum.test',appearance_id:'auto-switching-tests',theme:'auto',text_color:'var(--unknown)',secondary_text_color:'transparent'});
+ check(appearance._appearance.text_color===''&&appearance._appearance.secondary_text_color==='','invalid config color values fall back safely');
+ for(const name of ['--ha-card-background','--primary-text-color','--secondary-text-color'])appearance.style.removeProperty(name);
+ appearance.hass=withThemes(false,namedThemes);check(appearance._resolvedPalette.bg==='#f8fafb','automatic palette follows explicit HA light mode');
+ colorMedia.matches=true;appearance._colorMediaChanged();
+ check(appearance._resolvedPalette.bg==='#f8fafb','HA mode has priority over system dark preference');
+ appearance.hass={...makeHass('cleaning'),themes:{themes:namedThemes}};
+ check(appearance._resolvedPalette.bg==='#17212b','system dark preference is used when HA mode is absent');
+ colorMedia.matches=false;const systemMotion=appearance._motion;appearance._colorMediaChanged();
+ check(appearance._resolvedPalette.bg==='#f8fafb'&&appearance._motion===systemMotion,'system appearance changes do not restart animation');
+ for(const background of ['#000000','#666666','#767676','#7f7f7f','#aaaaaa','#ffffff']){
+  appearance.style.setProperty('--ha-card-background',background);appearance.style.setProperty('--primary-text-color',background);appearance.style.setProperty('--secondary-text-color',background);appearance._applyAppearance(true);
+  const palette=appearance._resolvedPalette;
+  check(['ink','muted','values','error'].every(key=>Math.min(ratio(palette[key],palette.bg),ratio(palette[key],palette.floor))>=4.5),`automatic contrast correction works on ${background}`);
+ }
+ stored.set(separate._appearanceStorageKey,'{not-json');separate.setConfig({entity:'vacuum.test',appearance_id:'separate-card'});
+ check(separate._appearance.theme==='auto','corrupted storage cannot break the card');
+ storage.blocked=true;separate._changeAppearance('theme','dark',true);
+ check(separate._resolvedPalette.bg==='#17212b'&&separate.shadowRoot.querySelector('.appearance-note').textContent.includes('sessão'),'blocked storage still applies appearance and explains session-only saving');
+ separate.hass=makeHass('docked');const storageCommands=commands.length;await separate._act('primary');
+ check(commands.length===storageCommands+1,'blocked storage does not prevent robot actions');
+ separate.shadowRoot.querySelector('.appearance-reset').dispatchEvent({type:'click'});
+ check(separate._appearance.theme==='auto','reset still works when storage is blocked');storage.blocked=false;
+ separate.setConfig({entity:'vacuum.test',name:'Bob o Aspirador'});
+ check(separate.shadowRoot.querySelector('.name').textContent==='Bob o Aspirador','custom robot names are retained');
+ const renameEditor=C.getConfigElement();renameEditor.setConfig({entity:'vacuum.test'});renameEditor.hass=makeHass();
+ check(renameEditor.shadowRoot.querySelector('[name="name"]').value==='Vaccum card-animations','editor defaults use the requested name');
+ appearance.disconnectedCallback();check(!colorMedia.listeners.has(appearance._colorMediaChanged),'disconnect removes system theme listener');
+ context.window.AudioContext=AudioMock;AudioMock.initialState='running';AudioMock.rejectResume=false;
+ const appearanceSound=new C();appearanceSound.setConfig({entity:'vacuum.test',appearance_id:'sound-tests'});appearanceSound.hass=makeHass();
+ const asq=selector=>appearanceSound.shadowRoot.querySelector(selector),appearanceSoundCommands=commands.length;
+ asq('.appearance-theme').value='dark';asq('.appearance-theme').dispatchEvent({type:'change'});
+ check(appearanceSound._audio.tones.length===1,'theme selection plays the choice sound');
+ appearanceSound._audio.currentTime+=.2;const soundColor=asq('[data-appearance="text_color"]');soundColor.value='#ffeedd';soundColor.dispatchEvent({type:'input'});
+ check(appearanceSound._audio.tones.length===1,'live color preview does not repeat the choice sound');
+ soundColor.dispatchEvent({type:'change'});check(appearanceSound._audio.tones.length===2,'committing a text color plays the choice sound');
+ appearanceSound._audio.currentTime+=.2;asq('.appearance-reset').dispatchEvent({type:'click'});
+ check(appearanceSound._audio.tones.length===3&&commands.length===appearanceSoundCommands,'appearance reset plays sound without commanding the robot');
+ appearanceSound.disconnectedCallback();delete context.window.AudioContext;
  const root=new Element('div');const preview=new C();preview.tagName='aspirador-vivo-card';preview.connectedCallback();root.append(preview);
  const demoStatus=new Element('span');demoStatus.setAttribute('class','demo-state');root.append(demoStatus);
  let interval,timeout;document.getElementById=()=>root;

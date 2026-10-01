@@ -6,7 +6,7 @@
   const status=root.querySelector(".demo-state");
   const labels={docked:"Na base",cleaning:"Limpando",paused:"Pausado",returning:"Voltando à base",idle:"Parado",unavailable:"Indisponível",error:"Precisa de atenção"};
   let state="docked", battery=86, minutes=0, mopMinutes=28, returningTimer=null, startedAt=0, accumulated=0, fan="Padrão", notice="";
-  const config={entity:"vacuum.demonstracao",name:"Aspirador Vivo",battery_entity:"sensor.demo_bateria",cleaning_time_entity:"sensor.demo_tempo",mop_time_entity:"sensor.demo_mops",custom_buttons:[
+  const config={entity:"vacuum.demonstracao",name:"Vaccum card-animations",battery_entity:"sensor.demo_bateria",cleaning_time_entity:"sensor.demo_tempo",mop_time_entity:"sensor.demo_mops",custom_buttons:[
     {name:"Limpar sala",icon:"room",entity:"script.demo_sala"},
     {name:"Limpar cozinha",icon:"kitchen",entity:"script.demo_cozinha"},
     {name:"Limpar com mops",icon:"mop",entity:"script.demo_mops"}
@@ -16,7 +16,7 @@
     const seconds=accumulated+(state === "cleaning" ? (Date.now()-startedAt)/1000 : 0);
     const elapsed=Math.floor(seconds/60);
     const values={
-      "vacuum.demonstracao":{entity_id:"vacuum.demonstracao",state,attributes:{friendly_name:"Aspirador Vivo",supported_features:8192|4|8|16|32|512|1024,fan_speed:fan,fan_speed_list:["Silencioso","Padrão","Turbo"]}},
+      "vacuum.demonstracao":{entity_id:"vacuum.demonstracao",state,attributes:{friendly_name:"Vaccum card-animations",supported_features:8192|4|8|16|32|512|1024,fan_speed:fan,fan_speed_list:["Silencioso","Padrão","Turbo"]}},
       "sensor.demo_bateria":{state:String(battery),attributes:{unit_of_measurement:"%"}},
       "sensor.demo_tempo":{state:String(minutes+elapsed),attributes:{unit_of_measurement:"min"}},
       "sensor.demo_mops":{state:String(Math.max(0,mopMinutes-elapsed)),attributes:{unit_of_measurement:"min"}},
@@ -24,7 +24,10 @@
       "script.demo_cozinha":{state:"off",attributes:{friendly_name:"Limpar cozinha"}},
       "script.demo_mops":{state:"off",attributes:{friendly_name:"Limpar com mops"}}
     };
-    card.hass={states:values,services:{vacuum:{start:{},pause:{},stop:{},return_to_base:{},clean_spot:{},locate:{},set_fan_speed:{}},script:{turn_on:{}}},callService:async(domain,service,data)=> {
+    card.hass={states:values,themes:{themes:{
+      "Oceano · exemplo":{"primary-color":"#087eab",modes:{light:{"ha-card-background":"#edf7fa","primary-text-color":"#143744","secondary-text-color":"#476270"},dark:{"ha-card-background":"#102a3a","primary-text-color":"#e7f6fa","secondary-text-color":"#adc8d8"}}},
+      "Ametista · exemplo":{"primary-color":"#a891ed",modes:{dark:{"ha-card-background":"#241f36","primary-text-color":"#f1eafa","secondary-text-color":"#c5b5d7"}}}
+    }},services:{vacuum:{start:{},pause:{},stop:{},return_to_base:{},clean_spot:{},locate:{},set_fan_speed:{}},script:{turn_on:{}}},callService:async(domain,service,data)=> {
       if(domain === "script") {
         setState("cleaning");
         notice=data.entity_id === "script.demo_mops" ? "Mops · simulação" : data.entity_id === "script.demo_cozinha" ? "Cozinha · simulação" : "Sala · simulação";

@@ -1,4 +1,4 @@
-/* Aspirador Vivo 1.2.1 — Home Assistant custom card, no external dependencies. */
+/* Vaccum card-animations 1.3.0 — Home Assistant custom card, no external dependencies. */
 (() => {
   "use strict";
   const TYPE = "aspirador-vivo-card";
@@ -51,14 +51,63 @@
     return `${new Intl.NumberFormat("pt-BR", {maximumFractionDigits:1}).format(n)} ${metric.unit || "min"}`;
   }
 
+  const CARD_NAME = "Vaccum card-animations";
+  const PALETTES = {
+    light:{bg:"#f8fafb",ink:"#182b36",muted:"#526773",accent:"#087f92",buttonInk:"#ffffff",error:"#a73535"},
+    dark:{bg:"#17212b",ink:"#edf4f8",muted:"#aabfcf",accent:"#6bdace",buttonInk:"#102932",error:"#ffb2a9"}
+  };
+  const APPEARANCE_COLORS = {text_color:"ink",secondary_text_color:"muted",value_color:"values"};
+  const normalizeHex = value => {
+    if(typeof value !== "string" || !/^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i.test(value)) return "";
+    const hex=value.toLowerCase();
+    return hex.length === 4 ? "#"+[...hex.slice(1)].map(c=>c+c).join("") : hex;
+  };
+  function normalizeAppearance(config) {
+    let theme=typeof config?.theme === "string" ? config.theme.trim() : "auto";
+    if(!theme || theme.length>180) theme="auto";
+    if(!["auto","light","dark"].includes(theme) && !theme.startsWith("ha:")) theme="ha:"+theme;
+    if(theme === "ha:") theme="auto";
+    return {theme,...Object.fromEntries(Object.keys(APPEARANCE_COLORS).map(key=>[key,normalizeHex(config?.[key])]))};
+  }
+  function colorChannels(value) {
+    const text=String(value || "").trim().toLowerCase();
+    if(text === "transparent") return [0,0,0,0];
+    if(/^#[a-f0-9]{3,4}$/i.test(text)) return colorChannels("#"+[...text.slice(1)].map(c=>c+c).join(""));
+    if(/^#[a-f0-9]{6}(?:[a-f0-9]{2})?$/i.test(text)) return [1,3,5].map(i=>parseInt(text.slice(i,i+2),16)).concat(text.length === 9 ? parseInt(text.slice(7,9),16)/255 : 1);
+    if(!/^rgba?\(/.test(text)) return null;
+    const tokens=text.slice(text.indexOf("(")+1,text.lastIndexOf(")")).match(/[-+]?(?:\d*\.)?\d+%?/g);
+    if(!tokens || ![3,4].includes(tokens.length)) return null;
+    return tokens.slice(0,3).map(t=>clamp(parseFloat(t)*(t.endsWith("%") ? 2.55 : 1),0,255)).concat(tokens[3] ? clamp(parseFloat(tokens[3])/(tokens[3].endsWith("%") ? 100 : 1),0,1) : 1);
+  }
+  const channelsHex = channels => "#"+channels.slice(0,3).map(n=>Math.round(clamp(n,0,255)).toString(16).padStart(2,"0")).join("");
+  function mixColor(first,second,amount) {
+    const a=colorChannels(first),b=colorChannels(second);
+    return channelsHex(a.slice(0,3).map((n,i)=>n+(b[i]-n)*amount));
+  }
+  function luminance(hex) {
+    const linear=colorChannels(hex).slice(0,3).map(n=>{const c=n/255;return c<=0.04045 ? c/12.92 : ((c+0.055)/1.055)**2.4;});
+    return linear[0]*0.2126+linear[1]*0.7152+linear[2]*0.0722;
+  }
+  function contrastRatio(first,second) {
+    const a=luminance(first),b=luminance(second);
+    return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05);
+  }
+  function readableColor(color,backgrounds,minimum=4.5) {
+    const score=c=>Math.min(...backgrounds.map(bg=>contrastRatio(c,bg)));
+    if(score(color)>=minimum) return color;
+    for(let step=1;step<=100;step++) {
+      const choices=[mixColor(color,"#000000",step/100),mixColor(color,"#ffffff",step/100)];
+      const passing=choices.filter(c=>score(c)>=minimum);
+      if(passing.length) return passing.sort((a,b)=>score(b)-score(a))[0];
+    }
+    return score("#000000")>=score("#ffffff") ? "#000000" : "#ffffff";
+  }
+
   const CSS = `
-    :host { display:block; font-family:var(--paper-font-body1_-_font-family,Roboto,Arial,sans-serif); color-scheme:inherit;
-      --av-bg:var(--ha-card-background,var(--card-background-color,light-dark(#f8fafb,#17212b)));
-      --av-ink:var(--primary-text-color,light-dark(#182b36,#edf4f8));
-      --av-muted:var(--secondary-text-color,light-dark(#526773,#aabfcf));
-      --av-accent:var(--primary-color,light-dark(#087f92,#6bdace));
-      --av-line:light-dark(#dde6eb,#2b3c49); --av-floor:light-dark(#edf3f5,#1b2a34);
-      --av-error:light-dark(#a73535,#ffb2a9); --av-shadow:light-dark(#213e4220,#00000040); }
+    :host { display:block; font-family:var(--paper-font-body1_-_font-family,Roboto,Arial,sans-serif);
+      --av-bg:#f8fafb; --av-ink:#182b36; --av-muted:#526773; --av-values:var(--av-ink);
+      --av-accent:#087f92; --av-button-ink:#fff; --av-line:#dde6eb; --av-floor:#edf3f5;
+      --av-error:#a73535; --av-shadow:#213e4220; }
     * { box-sizing:border-box; }
     ha-card { display:block; position:relative; overflow:hidden; background:var(--av-bg); color:var(--av-ink);
       border-radius:var(--ha-card-border-radius,24px); border:1px solid var(--av-line); box-shadow:var(--ha-card-box-shadow,0 12px 32px var(--av-shadow)); container-type:inline-size; }
@@ -76,18 +125,18 @@
     .stats { position:absolute; top:24px; left:14px; right:132px; display:grid; gap:18px; transition:opacity .35s,transform .35s; }
     .metric { min-width:0; }
     .metric-label { color:var(--av-muted); font-size:12px; margin-bottom:5px; line-height:1.4; }
-    .metric-value { font-size:22px; font-weight:500; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+    .metric-value { color:var(--av-values); font-size:22px; font-weight:500; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
     .metric:not(:first-child) .metric-value { font-size:17px; }
     .battery-track { margin-top:9px; height:4px; max-width:126px; background:var(--av-line); border-radius:3px; overflow:hidden; }
     .battery-fill { height:100%; width:0; background:var(--av-accent); border-radius:inherit; transition:width .5s; }
     .top-battery { position:absolute; top:12px; left:14px; right:14px; display:grid; grid-template-columns:1fr auto; gap:7px 15px; align-items:center;
       opacity:0; transform:translateY(-8px); pointer-events:none; transition:opacity .35s,transform .35s; }
     .top-battery .metric-label { margin:0; }
-    .top-battery strong { font-size:22px; font-weight:500; font-variant-numeric:tabular-nums; }
+    .top-battery strong { color:var(--av-values); font-size:22px; font-weight:500; font-variant-numeric:tabular-nums; }
     .top-battery .battery-track { grid-column:1/-1; margin:0; max-width:none; }
     .activity { position:absolute; bottom:13px; left:14px; right:115px; display:flex; gap:15px; flex-wrap:wrap; color:var(--av-muted); font-size:12px; opacity:0; transition:opacity .35s; }
     .activity span { white-space:nowrap; }
-    .activity b { color:var(--av-ink); font-weight:500; font-variant-numeric:tabular-nums; }
+    .activity b { color:var(--av-values); font-weight:500; font-variant-numeric:tabular-nums; }
     [data-active=true] .stats { opacity:0; transform:translateX(-8px); pointer-events:none; }
     [data-active=true] .top-battery, [data-active=true] .activity { opacity:1; transform:none; }
     .dock { position:absolute; right:16px; bottom:46px; width:70px; height:116px; }
@@ -121,8 +170,9 @@
     footer { padding:12px 20px 16px; border-top:1px solid var(--av-line); }
     .main-actions { display:flex; gap:8px; }
     button { min-height:44px; flex:1; border:0; border-radius:12px; font:500 13px Roboto,Arial,sans-serif; background:var(--av-floor); color:var(--av-ink); padding:10px 9px; }
-    button.primary { background:var(--av-accent); color:var(--text-primary-color,light-dark(#fff,#102932)); }
-    button:disabled { opacity:.45; cursor:default; }
+    button.primary { background:var(--av-accent); color:var(--av-button-ink); }
+    button:disabled { opacity:1; background:var(--av-floor); color:var(--av-muted); cursor:default; }
+    button.control-tile:disabled .button-icon { color:var(--av-muted); }
     button:focus-visible { outline:2px solid var(--av-accent); outline-offset:2px; }
     .av-icon { display:block; width:22px; height:22px; flex:none; }
     .button-icon { display:inline-flex; align-items:center; justify-content:center; color:inherit; }
@@ -143,6 +193,16 @@
     .fan-select { grid-column:1/-1; min-height:44px; padding:10px 12px; border:1px solid var(--av-line); border-radius:10px; color:var(--av-ink); background:var(--av-floor); font:400 16px Roboto,Arial,sans-serif; width:100%; }
     .custom-heading { margin:20px 0 12px; color:var(--av-muted); font-size:12px; font-weight:400; }
     .panel-message { margin:14px 0 0; color:var(--av-muted); font-size:12px; line-height:1.5; }
+    .appearance { margin-top:20px; border-top:1px solid var(--av-line); }
+    .appearance summary { min-height:44px; padding:14px 0 10px; font-size:14px; font-weight:500; color:var(--av-ink); }
+    .appearance-options { padding:5px 0 0; }
+    .appearance-options > label { display:block; font-size:12px; color:var(--av-muted); margin-bottom:8px; }
+    .appearance-theme { display:block; width:100%; min-height:44px; padding:10px 12px; border:1px solid var(--av-line); border-radius:10px; background:var(--av-floor); color:var(--av-ink); font:400 16px Roboto,Arial,sans-serif; }
+    .appearance-colors { display:grid; gap:9px; margin:14px 0; }
+    .appearance-colors label { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; font-size:13px; line-height:1.4; color:var(--av-ink); }
+    .appearance-color { flex:none; width:54px; height:44px; padding:4px; background:var(--av-floor); border:1px solid var(--av-line); border-radius:9px; }
+    .appearance-reset { width:100%; font-weight:400; }
+    .appearance-note, .appearance-adjusted { color:var(--av-muted); margin:11px 0 0; font-size:12px; line-height:1.5; }
     .service-message { padding:0 22px 13px; color:var(--av-error); font-size:12px; overflow-wrap:anywhere; }
     [hidden] { display:none !important; }
     @keyframes av-spin { to { transform:rotate(360deg); } }
@@ -155,28 +215,32 @@
     constructor() {
       super(); this.attachShadow({mode:"open"}); this._mode = null; this._motion = null; this._pending = false; this._controlsOpen = false;
       this._media = window.matchMedia("(prefers-reduced-motion: reduce)");
+      this._colorMedia = window.matchMedia("(prefers-color-scheme: dark)");
+      this._colorMediaChanged = () => { if(this.isConnected) this._applyAppearance(true); };
       this._mediaChanged = () => { if(this.isConnected) this._animate(this._mode,this._mode); };
       this._visibility = () => { if(!this._motion) return; if(document.hidden || this._controlsOpen) this._motion.pause(); else this._motion.play(); };
       this.shadowRoot.addEventListener("keydown",event=>{if(event.key === "Escape" && this._controlsOpen) this._showControls(false);});
     }
     static getConfigElement() { return document.createElement(TYPE + "-editor"); }
-    static getStubConfig(hass) { return {entity:Object.keys(hass?.states || {}).find(id => id.startsWith("vacuum.")) || "vacuum.seu_aspirador", name:"Aspirador Vivo"}; }
+    static getStubConfig(hass) { return {entity:Object.keys(hass?.states || {}).find(id => id.startsWith("vacuum.")) || "vacuum.seu_aspirador", name:CARD_NAME}; }
     setConfig(config) {
-      if (!config || typeof config.entity !== "string" || !config.entity.startsWith("vacuum.")) throw new Error("Escolha uma entidade vacuum para o Aspirador Vivo.");
+      if (!config || typeof config.entity !== "string" || !config.entity.startsWith("vacuum.")) throw new Error(`Escolha uma entidade vacuum para o ${CARD_NAME}.`);
       if(config.custom_buttons !== undefined && (!Array.isArray(config.custom_buttons) || config.custom_buttons.length>12)) throw new Error("Use uma lista de até 12 botões personalizados.");
-      this._config = {name:"Aspirador Vivo", show_controls:true, animation:true, sound:true, sound_volume:0.18, cycle_seconds:18, mop_label:"Mops · tempo restante", custom_buttons:[], icons:{}, ...config};
+      this._config = {name:CARD_NAME, show_controls:true, animation:true, sound:true, sound_volume:0.18, theme:"auto", cycle_seconds:18, mop_label:"Mops · tempo restante", custom_buttons:[], icons:{}, ...config};
       this._config.sound_volume=clamp(number(config.sound_volume) ?? 0.18,0,1);
       this._config.custom_buttons=this._config.custom_buttons.filter(b=>b && typeof b === "object").map(b=>({...b}));
       this._controlsOpen=false;
       this._config.cycle_seconds = clamp(number(config.cycle_seconds) || 18,8,90);
+      this._loadAppearance();
       this._render(); this._mode = null; this._update();
     }
     set hass(value) { this._hass = value; if(this._config) this._update(); }
     get hass() { return this._hass; }
-    getCardSize() { return Math.ceil((this._card?.offsetHeight || (this._controlsOpen ? 650 : this._config?.show_controls === false ? 320 : 426))/50); }
+    getCardSize() { return Math.ceil((this._card?.offsetHeight || (this._controlsOpen ? (this.shadowRoot.querySelector(".appearance")?.open ? 990 : 690) : this._config?.show_controls === false ? 320 : 426))/50); }
     getGridOptions() { return {columns:12,min_columns:12}; }
     connectedCallback() {
       this._media.addEventListener?.("change", this._mediaChanged);
+      this._colorMedia.addEventListener?.("change",this._colorMediaChanged);
       document.addEventListener("visibilitychange",this._visibility);
       if(typeof ResizeObserver !== "undefined") {
         this._resize = new ResizeObserver(entries => {
@@ -185,11 +249,12 @@
         });
         if(this._scene) this._resize.observe(this._scene);
       }
-      if(this._config) this._update(true);
+      if(this._config) { this._applyAppearance(true); this._update(true); }
     }
     disconnectedCallback() {
       this._motion?.cancel(); this._motion = null; this._resize?.disconnect();
       this._media.removeEventListener?.("change",this._mediaChanged);
+      this._colorMedia.removeEventListener?.("change",this._colorMediaChanged);
       document.removeEventListener("visibilitychange",this._visibility);
       const audio=this._audio; this._audio=null;
       if(audio && audio.state !== "closed") {
@@ -226,11 +291,27 @@
             <div class="fan-field"><span class="button-icon fan-icon"></span><label for="av-fan">Potência de aspiração</label><select id="av-fan" class="fan-select" aria-label="Potência de aspiração"></select></div>
             <h4 class="custom-heading">Seus atalhos</h4><div class="control-grid custom-grid"></div>
             <p class="panel-message" hidden></p>
+            <details class="appearance">
+              <summary class="cursor-interaction">Aparência</summary>
+              <div class="appearance-options">
+                <label for="av-theme">Tema do card</label><select id="av-theme" class="appearance-theme" aria-label="Tema do card"></select>
+                <div class="appearance-colors">
+                  <label for="av-text-color"><span>Textos principais</span><input id="av-text-color" class="appearance-color cursor-interaction" type="color" data-appearance="text_color"></label>
+                  <label for="av-secondary-color"><span>Rótulos e estado</span><input id="av-secondary-color" class="appearance-color cursor-interaction" type="color" data-appearance="secondary_text_color"></label>
+                  <label for="av-value-color"><span>Bateria e tempos</span><input id="av-value-color" class="appearance-color cursor-interaction" type="color" data-appearance="value_color"></label>
+                </div>
+                <button type="button" class="appearance-reset cursor-interaction">Restaurar aparência</button>
+                <p class="appearance-note" role="status" aria-live="polite">Suas escolhas ficam salvas neste dispositivo.</p>
+                <p class="appearance-adjusted" role="status" aria-live="polite" hidden></p>
+              </div>
+            </details>
           </section>
           <footer><div class="main-actions"><button type="button" class="primary cursor-interaction" data-action="primary"><span class="button-icon"></span><span class="button-label">Iniciar limpeza</span></button><button type="button" class="cursor-interaction" data-action="return"><span class="button-icon"></span><span class="button-label">Voltar à base</span></button></div><button type="button" class="more-controls cursor-interaction" aria-expanded="false" aria-controls="av-controls"><span class="button-icon"></span><span class="button-label">Mais controles</span></button></footer>
           <div class="service-message" role="alert" hidden></div>
         </ha-card>`;
       this._card = this.shadowRoot.querySelector("ha-card"); this._scene = this.shadowRoot.querySelector(".scene"); this._robot = this.shadowRoot.querySelector(".mover");
+      this._colorProbe=document.createElement("span"); this._colorProbe.hidden=true; this._colorProbe.setAttribute("aria-hidden","true"); this._card.append(this._colorProbe);
+      this._probeThemeKeys=[]; this._appearanceSignature=null;
       this.shadowRoot.querySelector(".name").textContent = this._config.name;
       this.shadowRoot.querySelector(".mop-label").textContent = this._config.mop_label;
       this.shadowRoot.querySelector("footer").hidden = this._config.show_controls === false;
@@ -250,10 +331,24 @@
       this._renderIcon(this.shadowRoot.querySelector(".fan-icon"),this._config.icons?.fan || "fan");
       this._renderIcon(this.shadowRoot.querySelector(".more-controls .button-icon"),this._config.icons?.more || "controls");
       this._renderCustomButtons();
+      this.shadowRoot.querySelector(".appearance-theme").addEventListener("change",event=>{
+        this._playSelectionSound(); this._changeAppearance("theme",event.target.value,true);
+      });
+      this.shadowRoot.querySelectorAll(".appearance-color").forEach(input=>{
+        input.addEventListener("input",()=>this._changeAppearance(input.dataset.appearance,input.value,false,input));
+        input.addEventListener("change",()=>{this._playSelectionSound();this._changeAppearance(input.dataset.appearance,input.value,true);});
+      });
+      this.shadowRoot.querySelector(".appearance-reset").addEventListener("click",()=>{
+        this._playSelectionSound();this._appearance={...this._appearanceDefaults};this._appearanceSaveFailed=false;
+        try { window.localStorage?.removeItem(this._appearanceStorageKey); } catch { this._appearanceSaveFailed=true; }
+        this._applyAppearance(true);
+      });
+      this._applyAppearance(true);
       this._resize?.observe(this._scene);
     }
     _update(force = false) {
       if(!this._card || !this._hass) return;
+      this._applyAppearance();
       const state = this._hass.states?.[this._config.entity];
       const raw = state?.state || "unavailable";
       const mode = LABELS[raw] ? raw : "unknown";
@@ -278,6 +373,107 @@
       this.shadowRoot.querySelectorAll(".mop-value").forEach(el => el.textContent = mop);
       this._refreshButtons();
       if(mode !== this._mode || force) { const previous = this._mode; this._mode = mode; if(this.isConnected) this._animate(mode,previous); }
+    }
+    _loadAppearance() {
+      this._appearanceDefaults=normalizeAppearance(this._config);
+      this._appearanceBasis=JSON.stringify(this._appearanceDefaults);
+      const identity=this._config.appearance_id || [window.location?.pathname || "",this._config.entity,this._config.name];
+      this._appearanceStorageKey="vaccum-card-animations:appearance:v1:"+JSON.stringify(identity);
+      this._appearance={...this._appearanceDefaults}; this._appearanceSaveFailed=false;
+      try {
+        const saved=JSON.parse(window.localStorage?.getItem(this._appearanceStorageKey) || "null");
+        if(saved?.version === 1 && saved.basis === this._appearanceBasis && saved.settings && typeof saved.settings === "object") this._appearance=normalizeAppearance(saved.settings);
+      } catch {}
+    }
+    _changeAppearance(key,value,persist,editingInput=null) {
+      if(!["theme",...Object.keys(APPEARANCE_COLORS)].includes(key)) return;
+      if(key !== "theme" && !normalizeHex(value)) return;
+      this._appearance=normalizeAppearance({...this._appearance,[key]:value});
+      if(persist) {
+        try {
+          if(!window.localStorage) throw new Error("Storage unavailable");
+          window.localStorage.setItem(this._appearanceStorageKey,JSON.stringify({version:1,basis:this._appearanceBasis,settings:this._appearance}));
+          this._appearanceSaveFailed=false;
+        } catch { this._appearanceSaveFailed=true; }
+      }
+      this._applyAppearance(true,editingInput);
+    }
+    _resolveThemeColor(value,fallback,background) {
+      if(typeof value !== "string" || !value.trim()) return fallback;
+      let parsed=colorChannels(value);
+      if(!parsed) {
+        this._colorProbe.style.color="";
+        this._colorProbe.style.color=value;
+        if(!this._colorProbe.style.color) return fallback;
+        parsed=colorChannels(getComputedStyle(this._colorProbe).color);
+      }
+      if(!parsed) return fallback;
+      const base=colorChannels(background);
+      return channelsHex(parsed.slice(0,3).map((channel,index)=>channel*parsed[3]+base[index]*(1-parsed[3])));
+    }
+    _applyAppearance(force=false,editingInput=null) {
+      if(!this._card || !this._appearance) return;
+      const theme=this._appearance.theme;
+      const available=this._hass?.themes?.themes || {};
+      const names=Object.keys(available).filter(name=>available[name] && typeof available[name] === "object" && !Array.isArray(available[name])).sort();
+      const selected=theme.startsWith("ha:") ? available[theme.slice(3)] : null;
+      let dark=theme === "dark" || (theme !== "light" && (typeof this._hass?.themes?.darkMode === "boolean" ? this._hass.themes.darkMode : this._colorMedia.matches));
+      if(selected?.modes?.dark && !selected.modes.light) dark=true;
+      if(selected?.modes?.light && !selected.modes.dark) dark=false;
+      const named=Boolean(selected && typeof selected === "object" && !Array.isArray(selected));
+      const {modes,...baseRules}=named ? selected : {};
+      const rules=named ? {...baseRules,...modes?.[dark ? "dark" : "light"]} : {};
+      const inherit=theme === "auto" || (theme.startsWith("ha:") && !named);
+      const computed=getComputedStyle(this);
+      const properties=["ha-card-background","card-background-color","primary-background-color","primary-text-color","secondary-text-color","primary-color","text-primary-color","error-color"];
+      const inherited=Object.fromEntries(properties.map(name=>[name,inherit ? String(computed.getPropertyValue?.("--"+name) || "").trim() : ""]));
+      const signature=JSON.stringify([this._appearance,rules,dark,names,inherited]);
+      if(!force && signature === this._appearanceSignature) return;
+      this._appearanceSignature=signature;
+      this._card.style.colorScheme=dark ? "dark" : "light";
+      for(const key of this._probeThemeKeys) this._colorProbe.style.removeProperty(key);
+      this._probeThemeKeys=[];
+      const base=PALETTES[dark ? "dark" : "light"];
+      const defaults={"ha-card-background":base.bg,"card-background-color":base.bg,"primary-background-color":base.bg,"primary-text-color":base.ink,"secondary-text-color":base.muted,"primary-color":base.accent,"text-primary-color":base.buttonInk,"error-color":base.error};
+      if(named) for(const [name,value] of Object.entries({...defaults,...rules})) {
+        if(/^[a-z0-9_-]+$/i.test(name) && ["string","number"].includes(typeof value)) {
+          const key="--"+name;this._colorProbe.style.setProperty(key,String(value));this._probeThemeKeys.push(key);
+        }
+      }
+      const raw=name=>named ? rules[name] : inherited[name];
+      const background=this._resolveThemeColor(raw("ha-card-background") || raw("card-background-color") || raw("primary-background-color"),base.bg,base.bg);
+      const surfaceDark=luminance(background)<0.35;
+      this._card.style.colorScheme=surfaceDark ? "dark" : "light";
+      const floor=mixColor(background,surfaceDark ? "#ffffff" : "#000000",surfaceDark ? 0.045 : 0.035);
+      const backgrounds=[background,floor];
+      const palette={bg:background,floor,line:mixColor(background,surfaceDark ? "#ffffff" : "#000000",0.16),shadow:surfaceDark ? "#00000040" : "#213e4220"};
+      const requested={
+        ink:this._appearance.text_color || this._resolveThemeColor(raw("primary-text-color"),base.ink,background),
+        muted:this._appearance.secondary_text_color || this._resolveThemeColor(raw("secondary-text-color"),base.muted,background),
+        values:this._appearance.value_color || this._appearance.text_color || this._resolveThemeColor(raw("primary-text-color"),base.ink,background)
+      };
+      for(const key of ["ink","muted","values"]) palette[key]=readableColor(requested[key],backgrounds);
+      palette.accent=readableColor(this._resolveThemeColor(raw("primary-color"),base.accent,background),backgrounds,3);
+      palette.buttonInk=readableColor(this._resolveThemeColor(raw("text-primary-color"),base.buttonInk,palette.accent),[palette.accent]);
+      palette.error=readableColor(this._resolveThemeColor(raw("error-color"),base.error,background),backgrounds);
+      this._resolvedPalette=palette;
+      for(const [key,value] of Object.entries(palette)) this._card.style.setProperty("--av-"+(key === "buttonInk" ? "button-ink" : key),value);
+      this._card.dataset.theme=theme;
+      const select=this.shadowRoot.querySelector(".appearance-theme");
+      const choices=[["auto","Automático · Home Assistant"],["light","Claro"],["dark","Escuro"],...names.map(name=>["ha:"+name,name])];
+      if(!choices.some(([value])=>value === theme)) choices.push([theme,theme.slice(3)+" · indisponível"]);
+      const optionsSignature=JSON.stringify(choices);
+      if(select.dataset.options !== optionsSignature) {
+        select.replaceChildren();select.dataset.options=optionsSignature;
+        for(const [value,label] of choices) { const option=document.createElement("option");option.value=value;option.textContent=label;select.append(option); }
+      }
+      select.value=theme;
+      for(const input of this.shadowRoot.querySelectorAll(".appearance-color")) if(input !== editingInput) input.value=palette[APPEARANCE_COLORS[input.dataset.appearance]];
+      this.shadowRoot.querySelector(".appearance-note").textContent=this._appearanceSaveFailed ? "Escolhas aplicadas nesta sessão; este navegador não permitiu salvá-las." : "Suas escolhas ficam salvas neste dispositivo.";
+      const adjusted=Object.entries(APPEARANCE_COLORS).some(([key,color])=>this._appearance[key] && requested[color] !== palette[color]);
+      const message=this.shadowRoot.querySelector(".appearance-adjusted");
+      message.hidden=!adjusted && !(theme.startsWith("ha:") && !named);
+      message.textContent=theme.startsWith("ha:") && !named ? "Tema indisponível. O card está acompanhando a aparência atual do Home Assistant." : "Uma cor foi ajustada para manter os textos legíveis.";
     }
     _geometry() {
       const width = this._scene.clientWidth || this._width || 384; const height = this._scene.clientHeight || 248;
@@ -508,7 +704,7 @@
       <label>Volume do som<input name="sound_volume" type="range" min="0" max="1" step="0.01"></label>
       <small>Sem sensor selecionado, o card usa os atributos do aspirador. Ajuste unidades e atributos pelo YAML quando necessário.</small>
       <h3>Botões personalizados</h3><div class="shortcut-list"></div><button type="button" class="editor-button add-shortcut cursor-interaction">${iconSVG("add")}Adicionar botão</button>`;
-      for(const key of ["name","mop_label"]) this.shadowRoot.querySelector(`[name="${key}"]`).value=this._config[key] || (key === "name" ? "Aspirador Vivo" : "Mops · tempo restante");
+      for(const key of ["name","mop_label"]) this.shadowRoot.querySelector(`[name="${key}"]`).value=this._config[key] || (key === "name" ? CARD_NAME : "Mops · tempo restante");
       for(const key of ["show_controls","animation","sound"]) this.shadowRoot.querySelector(`[name="${key}"]`).checked=this._config[key] !== false;
       this.shadowRoot.querySelector('[name="sound_volume"]').value=clamp(number(this._config.sound_volume) ?? 0.18,0,1);
       this._fillOptions();
@@ -587,5 +783,5 @@
   if(!customElements.get(TYPE)) customElements.define(TYPE,AspiradorVivoCard);
   if(!customElements.get(TYPE+"-editor")) customElements.define(TYPE+"-editor",AspiradorVivoEditor);
   window.customCards=window.customCards || [];
-  if(!window.customCards.some(card=>card.type === TYPE)) window.customCards.push({type:TYPE,name:"Aspirador Vivo",description:"Robô animado, bateria ao vivo, controles personalizados e som de seleção.",preview:true,getEntitySuggestion:(hass,entityId)=>entityId.startsWith("vacuum.") ? {entity:entityId} : null});
+  if(!window.customCards.some(card=>card.type === TYPE)) window.customCards.push({type:TYPE,name:CARD_NAME,description:"Robô animado, temas e cores, controles personalizados e som de seleção.",preview:true,getEntitySuggestion:(hass,entityId)=>entityId.startsWith("vacuum.") ? {entity:entityId} : null});
 })();

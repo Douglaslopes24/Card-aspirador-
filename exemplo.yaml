@@ -1,7 +1,7 @@
 # Configuração mínima — substitua pelo ID real do seu aspirador.
 type: custom:aspirador-vivo-card
 entity: vacuum.seu_aspirador
-name: Aspirador Vivo
+name: Vaccum card-animations
 
 # Sensores opcionais. Descomente e substitua pelos seus IDs.
 # battery_entity: sensor.seu_aspirador_bateria
@@ -21,6 +21,13 @@ name: Aspirador Vivo
 # sound: true
 # sound_volume: 0.18
 # cycle_seconds: 18
+
+# Aparência inicial. Você também pode ajustá-la em Mais controles → Aparência.
+# theme: auto  # auto, light, dark ou "ha:Nome do seu tema"
+# text_color: "#edf4f8"
+# secondary_text_color: "#aabfcf"
+# value_color: "#8de3d3"
+# appearance_id: aspirador_sala  # Opcional: separa escolhas de cards iguais.
 
 # Botões personalizados — substitua pelos scripts reais do seu aparelho.
 # Também podem ser criados no editor visual do cartão.
