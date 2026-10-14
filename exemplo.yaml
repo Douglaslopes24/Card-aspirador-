@@ -1,5 +1,5 @@
 # Configuração mínima — substitua pelo ID real do seu aspirador.
-type: custom:aspirador-vivo-card
+type: custom:vaccum-card-animations
 entity: vacuum.seu_aspirador
 name: Vaccum card-animations
 
@@ -18,6 +18,7 @@ name: Vaccum card-animations
 
 # show_controls: true
 # animation: true
+# dirt: true
 # sound: true
 # sound_volume: 0.18
 # cycle_seconds: 18
@@ -28,6 +29,19 @@ name: Vaccum card-animations
 # secondary_text_color: "#aabfcf"
 # value_color: "#8de3d3"
 # appearance_id: aspirador_sala  # Opcional: separa escolhas de cards iguais.
+
+# Personalização de todos os controles — também disponível no editor visual.
+# buttons:
+#   pause:
+#     name: Dar uma pausa
+#     icon: mdi:pause-circle
+#   return:
+#     name: Ir para a base
+#     icon: dock
+#     icon_image: /local/icones/minha-base.svg
+#   more:
+#     name: Abrir opções
+#     icon: controls
 
 # Botões personalizados — substitua pelos scripts reais do seu aparelho.
 # Também podem ser criados no editor visual do cartão.

@@ -1,17 +1,25 @@
 /* Standalone preview: all data and actions are simulated locally. */
 (() => {
-  const root=document.getElementById("aspirador-vivo-preview");
+  const root=document.getElementById("vaccum-card-animations-preview");
   if(!root) return;
-  const card=root.querySelector("aspirador-vivo-card");
+  const card=root.querySelector("vaccum-card-animations");
+  const editor=root.querySelector("vaccum-card-animations-editor");
   const status=root.querySelector(".demo-state");
   const labels={docked:"Na base",cleaning:"Limpando",paused:"Pausado",returning:"Voltando à base",idle:"Parado",unavailable:"Indisponível",error:"Precisa de atenção"};
   let state="docked", battery=86, minutes=0, mopMinutes=28, returningTimer=null, startedAt=0, accumulated=0, fan="Padrão", notice="";
-  const config={entity:"vacuum.demonstracao",name:"Vaccum card-animations",battery_entity:"sensor.demo_bateria",cleaning_time_entity:"sensor.demo_tempo",mop_time_entity:"sensor.demo_mops",custom_buttons:[
+  let config={entity:"vacuum.demonstracao",name:"Vaccum card-animations",battery_entity:"sensor.demo_bateria",cleaning_time_entity:"sensor.demo_tempo",mop_time_entity:"sensor.demo_mops",custom_buttons:[
     {name:"Limpar sala",icon:"room",entity:"script.demo_sala"},
     {name:"Limpar cozinha",icon:"kitchen",entity:"script.demo_cozinha"},
     {name:"Limpar com mops",icon:"mop",entity:"script.demo_mops"}
   ]};
   card.setConfig(config);
+  if(editor) {
+    editor.setConfig(config);
+    for(const child of editor.shadowRoot.children) child.hidden=child.tagName.toLowerCase() !== "style" && !child.matches(".button-settings");
+    editor.shadowRoot.querySelector(".button-settings").open=true;
+    editor.shadowRoot.querySelector(".button-settings summary").hidden=true;
+    editor.addEventListener("config-changed",event=>{config={...event.detail.config};card.setConfig(config);publish();});
+  }
   function publish() {
     const seconds=accumulated+(state === "cleaning" ? (Date.now()-startedAt)/1000 : 0);
     const elapsed=Math.floor(seconds/60);
@@ -40,6 +48,7 @@
       if(service === "locate") {notice="Sinal sonoro simulado";publish();}
       if(service === "set_fan_speed") {fan=data.fan_speed;notice=`Potência · ${fan}`;publish();}
     }};
+    if(editor) editor.hass=card.hass;
     status.textContent=notice || labels[state] || state;
   }
   function setState(next) {

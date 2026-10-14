@@ -6,7 +6,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, 'hacs.json'), 'utf8'
 if (typeof manifest.filename !== 'string' || !/^[A-Za-z0-9_-]+\.js$/.test(manifest.filename)) {
   throw new Error('hacs.json deve indicar um nome de arquivo JavaScript válido.');
 }
-const source = fs.readFileSync(path.join(root, 'aspirador-vivo-card.js'));
+const source = fs.readFileSync(path.join(root, 'vaccum-card-animations.js'));
 const destination = path.join(root, 'dist', manifest.filename);
 if (process.argv.includes('--check')) {
   if (!fs.existsSync(destination) || !fs.readFileSync(destination).equals(source)) {

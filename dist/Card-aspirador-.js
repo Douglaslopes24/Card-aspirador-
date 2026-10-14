@@ -1,7 +1,9 @@
-/* Vaccum card-animations 1.3.0 — Home Assistant custom card, no external dependencies. */
+/* Vaccum card-animations 1.4.0 — Home Assistant custom card, no external dependencies. */
 (() => {
   "use strict";
-  const TYPE = "aspirador-vivo-card";
+  const TYPE = "vaccum-card-animations";
+  // Compatibility aliases for dashboards configured before the rename.
+  const LEGACY_TYPE = "aspirador-vivo-card";
   const LABELS = {docked:"Na base", cleaning:"Limpando", returning:"Voltando à base", paused:"Pausado", idle:"Parado", error:"Precisa de atenção", unavailable:"Indisponível", unknown:"Sem informação"};
   const FEATURES = {start:8192, pause:4, stop:8, return_to_base:16, clean_spot:1024, locate:512, set_fan_speed:32, send_command:256};
   // Original icons for the custom control interface, with no external icon font.
@@ -21,8 +23,23 @@
     add:'<path d="M12 4v16M4 12h16"/>',
     trash:'<path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>'
   };
-  const iconSVG = name => `<svg class="av-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ICONS.controls}</svg>`;
-  const iconNames = {clean:"Aspirador",pause:"Pausa",stop:"Parar",dock:"Base",spot:"Limpeza pontual",locate:"Localizar",room:"Cômodo",kitchen:"Cozinha",mop:"Mops",fan:"Potência",controls:"Controles"};
+  const iconSVG = name => `<svg class="vca-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ICONS.controls}</svg>`;
+  const iconNames = {clean:"Aspirador",pause:"Pausa",stop:"Parar",dock:"Base",spot:"Limpeza pontual",locate:"Localizar",room:"Cômodo",kitchen:"Cozinha",mop:"Mops",fan:"Potência",controls:"Controles",back:"Voltar",add:"Adicionar",trash:"Remover"};
+  const BUTTONS = {
+    start:{name:"Iniciar limpeza",icon:"clean"},pause:{name:"Pausar",icon:"pause"},resume:{name:"Continuar",icon:"clean"},
+    return:{name:"Voltar à base",icon:"dock"},stop:{name:"Parar limpeza",icon:"stop"},spot:{name:"Limpeza pontual",icon:"spot"},locate:{name:"Encontrar robô",icon:"locate"},fan:{name:"Potência de aspiração",icon:"fan"},
+    more:{name:"Mais controles",icon:"controls"},back:{name:"Voltar ao robô",icon:"back"},appearance_reset:{name:"Restaurar aparência",icon:"back"}
+  };
+  function buttonDefinition(config,key) {
+    const defaults=BUTTONS[key];
+    const custom=config?.buttons?.[key];
+    const icon=custom?.icon || config?.icons?.[key] || (key === "resume" ? config?.icons?.start : "");
+    return {
+      name:typeof custom?.name === "string" && custom.name.trim() ? custom.name.trim().slice(0,120) : defaults.name,
+      icon:typeof icon === "string" && (Object.prototype.hasOwnProperty.call(ICONS,icon) || /^mdi:[a-z0-9-]+$/.test(icon)) ? icon : defaults.icon,
+      icon_image:typeof custom?.icon_image === "string" ? custom.icon_image : ""
+    };
+  }
   const valid = v => v !== null && v !== undefined && v !== "" && !["unknown","unavailable","none"].includes(String(v).toLowerCase());
   const number = v => valid(v) && Number.isFinite(Number(String(v).replace(",","."))) ? Number(String(v).replace(",",".")) : null;
   const clamp = (v,a,b) => Math.min(b,Math.max(a,v));
@@ -105,55 +122,61 @@
 
   const CSS = `
     :host { display:block; font-family:var(--paper-font-body1_-_font-family,Roboto,Arial,sans-serif);
-      --av-bg:#f8fafb; --av-ink:#182b36; --av-muted:#526773; --av-values:var(--av-ink);
-      --av-accent:#087f92; --av-button-ink:#fff; --av-line:#dde6eb; --av-floor:#edf3f5;
-      --av-error:#a73535; --av-shadow:#213e4220; }
+      --vca-bg:#f8fafb; --vca-ink:#182b36; --vca-muted:#526773; --vca-values:var(--vca-ink);
+      --vca-accent:#087f92; --vca-button-ink:#fff; --vca-line:#dde6eb; --vca-floor:#edf3f5;
+      --vca-error:#a73535; --vca-shadow:#213e4220; }
     * { box-sizing:border-box; }
-    ha-card { display:block; position:relative; overflow:hidden; background:var(--av-bg); color:var(--av-ink);
-      border-radius:var(--ha-card-border-radius,24px); border:1px solid var(--av-line); box-shadow:var(--ha-card-box-shadow,0 12px 32px var(--av-shadow)); container-type:inline-size; }
+    ha-card { display:block; position:relative; overflow:hidden; background:var(--vca-bg); color:var(--vca-ink);
+      border-radius:var(--ha-card-border-radius,24px); border:1px solid var(--vca-line); box-shadow:var(--ha-card-box-shadow,0 12px 32px var(--vca-shadow)); container-type:inline-size; }
     header { display:flex; align-items:center; gap:12px; padding:20px 22px 10px; }
     .heading { min-width:0; flex:1; }
     .name { margin:0 0 5px; font-size:17px; font-weight:500; overflow-wrap:anywhere; }
-    .state { display:flex; align-items:center; gap:7px; color:var(--av-muted); font-size:12px; }
-    .dot { flex:none; width:6px; height:6px; border-radius:50%; background:var(--av-muted); }
-    [data-mode=cleaning] .dot, [data-mode=docked] .dot { background:var(--av-accent); }
-    [data-mode=error] .dot { background:var(--av-error); }
-    .badge { color:var(--av-muted); font-size:11px; letter-spacing:1.4px; padding:8px 0 8px 8px; }
+    .state { display:flex; align-items:center; gap:7px; color:var(--vca-muted); font-size:12px; }
+    .dot { flex:none; width:6px; height:6px; border-radius:50%; background:var(--vca-muted); }
+    [data-mode=cleaning] .dot, [data-mode=docked] .dot { background:var(--vca-accent); }
+    [data-mode=error] .dot { background:var(--vca-error); }
     .scene { position:relative; height:248px; margin:0 8px; overflow:hidden; }
-    .floor { position:absolute; inset:64px 8px 7px; border-radius:20px; background:linear-gradient(180deg,transparent,var(--av-floor)); }
-    .tiles { position:absolute; inset:88px 10px 10px; background-image:linear-gradient(90deg,var(--av-line) 1px,transparent 1px),linear-gradient(var(--av-line) 1px,transparent 1px); background-size:46px 46px; opacity:.22; mask-image:linear-gradient(transparent,#000); }
+    .floor { position:absolute; inset:64px 8px 7px; border-radius:20px; background:linear-gradient(180deg,transparent,var(--vca-floor)); }
+    .tiles { position:absolute; inset:88px 10px 10px; background-image:linear-gradient(90deg,var(--vca-line) 1px,transparent 1px),linear-gradient(var(--vca-line) 1px,transparent 1px); background-size:46px 46px; opacity:.22; mask-image:linear-gradient(transparent,#000); }
+    .debris-layer { position:absolute; inset:0; pointer-events:none; }
+    .debris { position:absolute; width:18px; height:16px; opacity:1; transition:opacity .18s ease-out; }
+    .debris[data-collected=true] { opacity:0; }
+    .debris i { position:absolute; display:block; background:var(--vca-muted); border-radius:2px; opacity:.85; }
+    .debris i:first-child { width:6px; height:4px; left:1px; top:4px; transform:rotate(-23deg); }
+    .debris i:nth-child(2) { width:4px; height:4px; left:10px; top:9px; border-radius:50%; }
+    .debris i:nth-child(3) { width:3px; height:3px; left:11px; top:1px; transform:rotate(35deg); }
     .stats { position:absolute; top:24px; left:14px; right:132px; display:grid; gap:18px; transition:opacity .35s,transform .35s; }
     .metric { min-width:0; }
-    .metric-label { color:var(--av-muted); font-size:12px; margin-bottom:5px; line-height:1.4; }
-    .metric-value { color:var(--av-values); font-size:22px; font-weight:500; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+    .metric-label { color:var(--vca-muted); font-size:12px; margin-bottom:5px; line-height:1.4; }
+    .metric-value { color:var(--vca-values); font-size:22px; font-weight:500; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
     .metric:not(:first-child) .metric-value { font-size:17px; }
-    .battery-track { margin-top:9px; height:4px; max-width:126px; background:var(--av-line); border-radius:3px; overflow:hidden; }
-    .battery-fill { height:100%; width:0; background:var(--av-accent); border-radius:inherit; transition:width .5s; }
+    .battery-track { margin-top:9px; height:4px; max-width:126px; background:var(--vca-line); border-radius:3px; overflow:hidden; }
+    .battery-fill { height:100%; width:0; background:var(--vca-accent); border-radius:inherit; transition:width .5s; }
     .top-battery { position:absolute; top:12px; left:14px; right:14px; display:grid; grid-template-columns:1fr auto; gap:7px 15px; align-items:center;
       opacity:0; transform:translateY(-8px); pointer-events:none; transition:opacity .35s,transform .35s; }
     .top-battery .metric-label { margin:0; }
-    .top-battery strong { color:var(--av-values); font-size:22px; font-weight:500; font-variant-numeric:tabular-nums; }
+    .top-battery strong { color:var(--vca-values); font-size:22px; font-weight:500; font-variant-numeric:tabular-nums; }
     .top-battery .battery-track { grid-column:1/-1; margin:0; max-width:none; }
-    .activity { position:absolute; bottom:13px; left:14px; right:115px; display:flex; gap:15px; flex-wrap:wrap; color:var(--av-muted); font-size:12px; opacity:0; transition:opacity .35s; }
+    .activity { position:absolute; bottom:13px; left:14px; right:115px; display:flex; gap:15px; flex-wrap:wrap; color:var(--vca-muted); font-size:12px; opacity:0; transition:opacity .35s; }
     .activity span { white-space:nowrap; }
-    .activity b { color:var(--av-values); font-weight:500; font-variant-numeric:tabular-nums; }
+    .activity b { color:var(--vca-values); font-weight:500; font-variant-numeric:tabular-nums; }
     [data-active=true] .stats { opacity:0; transform:translateX(-8px); pointer-events:none; }
     [data-active=true] .top-battery, [data-active=true] .activity { opacity:1; transform:none; }
     .dock { position:absolute; right:16px; bottom:46px; width:70px; height:116px; }
-    .dock-shadow { position:absolute; bottom:-20px; left:-9px; width:89px; height:37px; background:var(--av-shadow); border-radius:50%; filter:blur(6px); }
+    .dock-shadow { position:absolute; bottom:-20px; left:-9px; width:89px; height:37px; background:var(--vca-shadow); border-radius:50%; filter:blur(6px); }
     .tower { position:absolute; inset:0 2px 6px; border-radius:15px 15px 10px 10px; background:linear-gradient(110deg,#fff,#e0e6e9 60%,#b7c3cc); box-shadow:inset 2px 0 3px #fff,4px 5px 6px #0002; }
     .tower::before { content:""; position:absolute; top:6px; left:10px; right:10px; height:3px; background:#c6d0d6; border-radius:4px; }
     .dock-face { position:absolute; top:27px; left:8px; right:8px; height:40px; border-radius:6px; background:linear-gradient(120deg,#36434b,#1a242c); }
     .dock-led { position:absolute; top:12px; left:27px; width:8px; height:3px; border-radius:5px; background:#7ddbc7; box-shadow:0 0 5px #58d6b980; }
     .dock-port { position:absolute; bottom:8px; left:15px; right:15px; height:22px; background:#45545e; border-radius:8px 8px 0 0; }
     .tray { position:absolute; bottom:-24px; left:-9px; width:88px; height:47px; border-radius:12px 12px 23px 23px; background:linear-gradient(#bdcbd2,#dce3e8); box-shadow:0 3px 4px #0002; }
-    .dock-label { position:absolute; bottom:-42px; left:0; right:0; text-align:center; color:var(--av-muted); font-size:11px; }
+    .dock-label { position:absolute; bottom:-42px; left:0; right:0; text-align:center; color:var(--vca-muted); font-size:11px; }
     .mover { position:absolute; left:0; top:0; width:70px; height:70px; will-change:transform; z-index:2; }
     .robot-shadow { position:absolute; inset:6px -3px -6px; border-radius:50%; background:#0003; filter:blur(4px); }
     .halo { position:absolute; inset:-12px; border-radius:50%; background:radial-gradient(circle,#65dcca28,transparent 67%); opacity:0; transition:opacity .3s; }
-    .mop { position:absolute; bottom:-3px; width:24px; height:24px; border-radius:50%; background:repeating-conic-gradient(#63bfb4 0deg 20deg,#abd9d1 20deg 40deg); box-shadow:0 0 0 2px #2d5a5815; animation:av-spin 2s linear infinite paused; }
+    .mop { position:absolute; bottom:-3px; width:24px; height:24px; border-radius:50%; background:repeating-conic-gradient(#63bfb4 0deg 20deg,#abd9d1 20deg 40deg); box-shadow:0 0 0 2px #2d5a5815; animation:vca-spin 2s linear infinite paused; }
     .mop.left { left:5px; } .mop.right { right:5px; animation-direction:reverse; }
-    .brush { position:absolute; left:-7px; top:9px; width:29px; height:29px; animation:av-spin 1.1s linear infinite paused; }
+    .brush { position:absolute; left:-7px; top:9px; width:29px; height:29px; animation:vca-spin 1.1s linear infinite paused; }
     .brush i { position:absolute; top:13px; left:14px; width:19px; height:2px; border-radius:2px; background:#57757d; transform-origin:0 50%; }
     .brush i:nth-child(2) { transform:rotate(120deg); } .brush i:nth-child(3) { transform:rotate(240deg); }
     .shell { position:absolute; inset:0; border-radius:50%; background:linear-gradient(135deg,#fff 10%,#f1f5f7 46%,#b4c3cd); box-shadow:inset 0 -4px 0 #869ba8,inset 0 2px 1px #fff,0 2px 5px #0003; }
@@ -167,58 +190,63 @@
     [data-mode=cleaning] .halo { opacity:1; }
     [data-mode=error] .robot-led { background:#f07c70; }
     [data-mode=unavailable] .mover, [data-mode=unknown] .mover, [data-mode=unavailable] .dock, [data-mode=unknown] .dock { opacity:.4; }
-    footer { padding:12px 20px 16px; border-top:1px solid var(--av-line); }
+    footer { padding:12px 20px 16px; border-top:1px solid var(--vca-line); }
     .main-actions { display:flex; gap:8px; }
-    button { min-height:44px; flex:1; border:0; border-radius:12px; font:500 13px Roboto,Arial,sans-serif; background:var(--av-floor); color:var(--av-ink); padding:10px 9px; }
-    button.primary { background:var(--av-accent); color:var(--av-button-ink); }
-    button:disabled { opacity:1; background:var(--av-floor); color:var(--av-muted); cursor:default; }
-    button.control-tile:disabled .button-icon { color:var(--av-muted); }
-    button:focus-visible { outline:2px solid var(--av-accent); outline-offset:2px; }
-    .av-icon { display:block; width:22px; height:22px; flex:none; }
-    .button-icon { display:inline-flex; align-items:center; justify-content:center; color:inherit; }
+    .main-actions button { min-width:0; }
+    .button-label { min-width:0; overflow-wrap:anywhere; }
+    button { min-height:44px; flex:1; border:0; border-radius:12px; font:500 13px Roboto,Arial,sans-serif; background:var(--vca-floor); color:var(--vca-ink); padding:10px 9px; }
+    button.primary { background:var(--vca-accent); color:var(--vca-button-ink); }
+    button:disabled { opacity:1; background:var(--vca-floor); color:var(--vca-muted); cursor:default; }
+    button.control-tile:disabled .button-icon { color:var(--vca-muted); }
+    button:focus-visible { outline:2px solid var(--vca-accent); outline-offset:2px; }
+    .vca-icon { display:block; width:22px; height:22px; flex:none; }
+    .button-icon { display:inline-flex; flex:none; align-items:center; justify-content:center; color:inherit; }
     .button-icon ha-icon { --mdc-icon-size:22px; }
     .button-icon img { width:24px; height:24px; object-fit:contain; }
     .main-actions button, .more-controls { display:flex; align-items:center; justify-content:center; gap:7px; }
-    .main-actions .av-icon { width:19px; height:19px; }
-    .more-controls { width:100%; margin-top:9px; background:transparent; color:var(--av-muted); min-height:44px; font-weight:400; }
-    .controls-panel { padding:12px 20px 18px; animation:av-panel .24s ease-out; }
+    .main-actions .vca-icon { width:19px; height:19px; }
+    .more-controls { width:100%; margin-top:9px; background:transparent; color:var(--vca-muted); min-height:44px; font-weight:400; }
+    .controls-panel { padding:12px 20px 18px; animation:vca-panel .24s ease-out; }
     .panel-heading { margin:0 0 14px; font-size:15px; font-weight:500; }
     .control-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
     .control-tile { display:flex; flex-direction:column; gap:8px; align-items:flex-start; justify-content:center; padding:14px; min-height:83px; text-align:left; }
-    .control-tile .button-icon { color:var(--av-accent); }
+    .control-tile .button-icon { color:var(--vca-accent); }
     .control-tile .button-label { overflow-wrap:anywhere; line-height:1.4; }
     .fan-field { display:grid; grid-template-columns:auto 1fr; gap:9px 11px; align-items:center; margin-top:16px; }
-    .fan-field .button-icon { color:var(--av-accent); }
-    .fan-field label { color:var(--av-muted); font-size:12px; }
-    .fan-select { grid-column:1/-1; min-height:44px; padding:10px 12px; border:1px solid var(--av-line); border-radius:10px; color:var(--av-ink); background:var(--av-floor); font:400 16px Roboto,Arial,sans-serif; width:100%; }
-    .custom-heading { margin:20px 0 12px; color:var(--av-muted); font-size:12px; font-weight:400; }
-    .panel-message { margin:14px 0 0; color:var(--av-muted); font-size:12px; line-height:1.5; }
-    .appearance { margin-top:20px; border-top:1px solid var(--av-line); }
-    .appearance summary { min-height:44px; padding:14px 0 10px; font-size:14px; font-weight:500; color:var(--av-ink); }
+    .fan-field .button-icon { color:var(--vca-accent); }
+    .fan-field label { color:var(--vca-muted); font-size:12px; }
+    .fan-select { grid-column:1/-1; min-height:44px; padding:10px 12px; border:1px solid var(--vca-line); border-radius:10px; color:var(--vca-ink); background:var(--vca-floor); font:400 16px Roboto,Arial,sans-serif; width:100%; }
+    .custom-heading { margin:20px 0 12px; color:var(--vca-muted); font-size:12px; font-weight:400; }
+    .panel-message { margin:14px 0 0; color:var(--vca-muted); font-size:12px; line-height:1.5; }
+    .appearance { margin-top:20px; border-top:1px solid var(--vca-line); }
+    .appearance summary { min-height:44px; padding:14px 0 10px; font-size:14px; font-weight:500; color:var(--vca-ink); }
     .appearance-options { padding:5px 0 0; }
-    .appearance-options > label { display:block; font-size:12px; color:var(--av-muted); margin-bottom:8px; }
-    .appearance-theme { display:block; width:100%; min-height:44px; padding:10px 12px; border:1px solid var(--av-line); border-radius:10px; background:var(--av-floor); color:var(--av-ink); font:400 16px Roboto,Arial,sans-serif; }
+    .appearance-options > label { display:block; font-size:12px; color:var(--vca-muted); margin-bottom:8px; }
+    .appearance-theme { display:block; width:100%; min-height:44px; padding:10px 12px; border:1px solid var(--vca-line); border-radius:10px; background:var(--vca-floor); color:var(--vca-ink); font:400 16px Roboto,Arial,sans-serif; }
     .appearance-colors { display:grid; gap:9px; margin:14px 0; }
-    .appearance-colors label { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; font-size:13px; line-height:1.4; color:var(--av-ink); }
-    .appearance-color { flex:none; width:54px; height:44px; padding:4px; background:var(--av-floor); border:1px solid var(--av-line); border-radius:9px; }
-    .appearance-reset { width:100%; font-weight:400; }
-    .appearance-note, .appearance-adjusted { color:var(--av-muted); margin:11px 0 0; font-size:12px; line-height:1.5; }
-    .service-message { padding:0 22px 13px; color:var(--av-error); font-size:12px; overflow-wrap:anywhere; }
+    .appearance-colors label { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; font-size:13px; line-height:1.4; color:var(--vca-ink); }
+    .appearance-color { flex:none; width:54px; height:44px; padding:4px; background:var(--vca-floor); border:1px solid var(--vca-line); border-radius:9px; }
+    .appearance-reset { width:100%; font-weight:400; display:flex; align-items:center; justify-content:center; gap:7px; }
+    .appearance-note, .appearance-adjusted { color:var(--vca-muted); margin:11px 0 0; font-size:12px; line-height:1.5; }
+    .service-message { padding:0 22px 13px; color:var(--vca-error); font-size:12px; overflow-wrap:anywhere; }
     [hidden] { display:none !important; }
-    @keyframes av-spin { to { transform:rotate(360deg); } }
-    @keyframes av-panel { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    @keyframes vca-spin { to { transform:rotate(360deg); } }
+    @keyframes vca-panel { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
     @container (max-width:330px) { header { padding:18px 16px 9px; } .stats { right:120px; left:8px; } .activity { left:8px; gap:7px; right:108px; } .metric-label { font-size:11px; } footer { padding:11px 14px 14px; } .controls-panel { padding:12px 14px 16px; } .control-tile { padding:12px; } }
-    @media (prefers-reduced-motion:reduce) { .mop,.brush,.controls-panel { animation:none; } .stats,.top-battery,.activity,.battery-fill { transition:none; } }
+    @media (prefers-reduced-motion:reduce) { .mop,.brush,.controls-panel { animation:none; } .stats,.top-battery,.activity,.battery-fill,.debris { transition:none; } }
   `;
 
-  class AspiradorVivoCard extends HTMLElement {
+  class VaccumCardAnimations extends HTMLElement {
     constructor() {
       super(); this.attachShadow({mode:"open"}); this._mode = null; this._motion = null; this._pending = false; this._controlsOpen = false;
       this._media = window.matchMedia("(prefers-reduced-motion: reduce)");
       this._colorMedia = window.matchMedia("(prefers-color-scheme: dark)");
       this._colorMediaChanged = () => { if(this.isConnected) this._applyAppearance(true); };
       this._mediaChanged = () => { if(this.isConnected) this._animate(this._mode,this._mode); };
-      this._visibility = () => { if(!this._motion) return; if(document.hidden || this._controlsOpen) this._motion.pause(); else this._motion.play(); };
+      this._visibility = () => {
+        if(document.hidden || this._controlsOpen) { this._motion?.pause(); this._stopDebrisLoop(); }
+        else { this._motion?.play(); this._startDebrisLoop(); }
+      };
       this.shadowRoot.addEventListener("keydown",event=>{if(event.key === "Escape" && this._controlsOpen) this._showControls(false);});
     }
     static getConfigElement() { return document.createElement(TYPE + "-editor"); }
@@ -226,7 +254,8 @@
     setConfig(config) {
       if (!config || typeof config.entity !== "string" || !config.entity.startsWith("vacuum.")) throw new Error(`Escolha uma entidade vacuum para o ${CARD_NAME}.`);
       if(config.custom_buttons !== undefined && (!Array.isArray(config.custom_buttons) || config.custom_buttons.length>12)) throw new Error("Use uma lista de até 12 botões personalizados.");
-      this._config = {name:CARD_NAME, show_controls:true, animation:true, sound:true, sound_volume:0.18, theme:"auto", cycle_seconds:18, mop_label:"Mops · tempo restante", custom_buttons:[], icons:{}, ...config};
+      if(config.buttons !== undefined && (!config.buttons || typeof config.buttons !== "object" || Array.isArray(config.buttons))) throw new Error("Configure buttons como um objeto de botões.");
+      this._config = {name:CARD_NAME, show_controls:true, animation:true, dirt:true, sound:true, sound_volume:0.18, theme:"auto", cycle_seconds:18, mop_label:"Mops · tempo restante", custom_buttons:[], buttons:{}, icons:{}, ...config};
       this._config.sound_volume=clamp(number(config.sound_volume) ?? 0.18,0,1);
       this._config.custom_buttons=this._config.custom_buttons.filter(b=>b && typeof b === "object").map(b=>({...b}));
       this._controlsOpen=false;
@@ -252,6 +281,7 @@
       if(this._config) { this._applyAppearance(true); this._update(true); }
     }
     disconnectedCallback() {
+      this._stopDebrisLoop();
       this._motion?.cancel(); this._motion = null; this._resize?.disconnect();
       this._media.removeEventListener?.("change",this._mediaChanged);
       this._colorMedia.removeEventListener?.("change",this._colorMediaChanged);
@@ -262,13 +292,15 @@
       }
     }
     _render() {
+      this._stopDebrisLoop(); this._debris=[]; this._debrisPreviousPose=null;
       this._motion?.cancel(); this._resize?.disconnect();
       this._hasPlaced=false;
       this.shadowRoot.innerHTML = `<style>${CSS}</style>
         <ha-card data-mode="unknown" data-active="false">
-          <header><div class="heading"><h2 class="name"></h2><div class="state" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span class="state-text">Sem informação</span></div></div><span class="badge" aria-hidden="true">VIVO</span></header>
+          <header><div class="heading"><h2 class="name"></h2><div class="state" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span class="state-text">Sem informação</span></div></div></header>
           <div class="scene" role="group" aria-label="Aspirador na base à direita">
             <div class="floor" aria-hidden="true"></div><div class="tiles" aria-hidden="true"></div>
+            <div class="debris-layer" aria-hidden="true" hidden></div>
             <div class="stats">
               <div class="metric"><div class="metric-label">Bateria</div><div class="metric-value battery-value">—</div><div class="battery-track" role="progressbar" aria-label="Bateria" aria-valuemin="0" aria-valuemax="100"><div class="battery-fill"></div></div></div>
               <div class="metric"><div class="metric-label">Tempo de limpeza</div><div class="metric-value clean-value">—</div></div>
@@ -279,7 +311,7 @@
             <div class="mover" aria-hidden="true"><div class="robot-shadow"></div><div class="halo"></div><div class="mop left"></div><div class="mop right"></div><div class="brush"><i></i><i></i><i></i></div><div class="shell"><div class="bumper"></div><div class="lidar"></div><div class="robot-led"></div></div></div>
             <div class="activity" aria-hidden="true"><span>Limpeza <b class="clean-value">—</b></span><span>Mops <b class="mop-value">—</b></span></div>
           </div>
-          <section class="controls-panel" id="av-controls" aria-label="Controles do aspirador" hidden>
+          <section class="controls-panel" id="vca-controls" aria-label="Controles do aspirador" hidden>
             <h3 class="panel-heading">Controles do aspirador</h3>
             <div class="control-grid">
               <button type="button" class="control-tile cursor-interaction" data-action="primary"><span class="button-icon"></span><span class="button-label">Iniciar limpeza</span></button>
@@ -288,28 +320,29 @@
               <button type="button" class="control-tile cursor-interaction" data-action="spot"><span class="button-icon"></span><span class="button-label">Limpeza pontual</span></button>
               <button type="button" class="control-tile cursor-interaction" data-action="locate"><span class="button-icon"></span><span class="button-label">Encontrar robô</span></button>
             </div>
-            <div class="fan-field"><span class="button-icon fan-icon"></span><label for="av-fan">Potência de aspiração</label><select id="av-fan" class="fan-select" aria-label="Potência de aspiração"></select></div>
+            <div class="fan-field"><span class="button-icon fan-icon"></span><label for="vca-fan">Potência de aspiração</label><select id="vca-fan" class="fan-select" aria-label="Potência de aspiração"></select></div>
             <h4 class="custom-heading">Seus atalhos</h4><div class="control-grid custom-grid"></div>
             <p class="panel-message" hidden></p>
             <details class="appearance">
               <summary class="cursor-interaction">Aparência</summary>
               <div class="appearance-options">
-                <label for="av-theme">Tema do card</label><select id="av-theme" class="appearance-theme" aria-label="Tema do card"></select>
+                <label for="vca-theme">Tema do card</label><select id="vca-theme" class="appearance-theme" aria-label="Tema do card"></select>
                 <div class="appearance-colors">
-                  <label for="av-text-color"><span>Textos principais</span><input id="av-text-color" class="appearance-color cursor-interaction" type="color" data-appearance="text_color"></label>
-                  <label for="av-secondary-color"><span>Rótulos e estado</span><input id="av-secondary-color" class="appearance-color cursor-interaction" type="color" data-appearance="secondary_text_color"></label>
-                  <label for="av-value-color"><span>Bateria e tempos</span><input id="av-value-color" class="appearance-color cursor-interaction" type="color" data-appearance="value_color"></label>
+                  <label for="vca-text-color"><span>Textos principais</span><input id="vca-text-color" class="appearance-color cursor-interaction" type="color" data-appearance="text_color"></label>
+                  <label for="vca-secondary-color"><span>Rótulos e estado</span><input id="vca-secondary-color" class="appearance-color cursor-interaction" type="color" data-appearance="secondary_text_color"></label>
+                  <label for="vca-value-color"><span>Bateria e tempos</span><input id="vca-value-color" class="appearance-color cursor-interaction" type="color" data-appearance="value_color"></label>
                 </div>
-                <button type="button" class="appearance-reset cursor-interaction">Restaurar aparência</button>
+                <button type="button" class="appearance-reset cursor-interaction"><span class="button-icon"></span><span class="button-label">Restaurar aparência</span></button>
                 <p class="appearance-note" role="status" aria-live="polite">Suas escolhas ficam salvas neste dispositivo.</p>
                 <p class="appearance-adjusted" role="status" aria-live="polite" hidden></p>
               </div>
             </details>
           </section>
-          <footer><div class="main-actions"><button type="button" class="primary cursor-interaction" data-action="primary"><span class="button-icon"></span><span class="button-label">Iniciar limpeza</span></button><button type="button" class="cursor-interaction" data-action="return"><span class="button-icon"></span><span class="button-label">Voltar à base</span></button></div><button type="button" class="more-controls cursor-interaction" aria-expanded="false" aria-controls="av-controls"><span class="button-icon"></span><span class="button-label">Mais controles</span></button></footer>
+          <footer><div class="main-actions"><button type="button" class="primary cursor-interaction" data-action="primary"><span class="button-icon"></span><span class="button-label">Iniciar limpeza</span></button><button type="button" class="cursor-interaction" data-action="return"><span class="button-icon"></span><span class="button-label">Voltar à base</span></button></div><button type="button" class="more-controls cursor-interaction" aria-expanded="false" aria-controls="vca-controls"><span class="button-icon"></span><span class="button-label">Mais controles</span></button></footer>
           <div class="service-message" role="alert" hidden></div>
         </ha-card>`;
       this._card = this.shadowRoot.querySelector("ha-card"); this._scene = this.shadowRoot.querySelector(".scene"); this._robot = this.shadowRoot.querySelector(".mover");
+      this._debrisLayer=this.shadowRoot.querySelector(".debris-layer");
       this._colorProbe=document.createElement("span"); this._colorProbe.hidden=true; this._colorProbe.setAttribute("aria-hidden","true"); this._card.append(this._colorProbe);
       this._probeThemeKeys=[]; this._appearanceSignature=null;
       this.shadowRoot.querySelector(".name").textContent = this._config.name;
@@ -326,10 +359,13 @@
         if(event.target.disabled) return;
         this._playSelectionSound(); this._setFan(event.target.value);
       });
-      for(const btn of this.shadowRoot.querySelectorAll('[data-action="return"]')) this._renderIcon(btn.querySelector(".button-icon"),this._config.icons?.return || "dock");
-      for(const [action,icon] of [["stop","stop"],["spot","spot"],["locate","locate"]]) this._renderIcon(this.shadowRoot.querySelector(`[data-action="${action}"] .button-icon`),this._config.icons?.[action] || icon);
-      this._renderIcon(this.shadowRoot.querySelector(".fan-icon"),this._config.icons?.fan || "fan");
-      this._renderIcon(this.shadowRoot.querySelector(".more-controls .button-icon"),this._config.icons?.more || "controls");
+      for(const key of ["return","stop","spot","locate"]) for(const btn of this.shadowRoot.querySelectorAll(`[data-action="${key}"]`)) this._setButtonContent(btn,key);
+      const fan=buttonDefinition(this._config,"fan");
+      this.shadowRoot.querySelector(".fan-field label").textContent=fan.name;
+      this.shadowRoot.querySelector(".fan-select").setAttribute("aria-label",fan.name);
+      this._renderIcon(this.shadowRoot.querySelector(".fan-icon"),fan.icon,fan.icon_image);
+      this._setButtonContent(this.shadowRoot.querySelector(".more-controls"),"more");
+      this._setButtonContent(this.shadowRoot.querySelector(".appearance-reset"),"appearance_reset");
       this._renderCustomButtons();
       this.shadowRoot.querySelector(".appearance-theme").addEventListener("change",event=>{
         this._playSelectionSound(); this._changeAppearance("theme",event.target.value,true);
@@ -457,7 +493,7 @@
       palette.buttonInk=readableColor(this._resolveThemeColor(raw("text-primary-color"),base.buttonInk,palette.accent),[palette.accent]);
       palette.error=readableColor(this._resolveThemeColor(raw("error-color"),base.error,background),backgrounds);
       this._resolvedPalette=palette;
-      for(const [key,value] of Object.entries(palette)) this._card.style.setProperty("--av-"+(key === "buttonInk" ? "button-ink" : key),value);
+      for(const [key,value] of Object.entries(palette)) this._card.style.setProperty("--vca-"+(key === "buttonInk" ? "button-ink" : key),value);
       this._card.dataset.theme=theme;
       const select=this.shadowRoot.querySelector(".appearance-theme");
       const choices=[["auto","Automático · Home Assistant"],["light","Claro"],["dark","Escuro"],...names.map(name=>["ha:"+name,name])];
@@ -479,6 +515,53 @@
       const width = this._scene.clientWidth || this._width || 384; const height = this._scene.clientHeight || 248;
       return {width,height,dock:{x:width-51,y:height-53,a:0},left:49,right:Math.max(121,width-119),top:105,bottom:height-100};
     }
+    _syncDebris(mode,previous,geometry,reduced) {
+      this._stopDebrisLoop();
+      const enabled=this._config.dirt !== false && !reduced && typeof window.requestAnimationFrame === "function";
+      if(!enabled || !["cleaning","paused"].includes(mode)) {
+        this._debris=[];this._debrisLayer.replaceChildren();this._debrisLayer.hidden=true;return;
+      }
+      if(mode === "cleaning" && (!this._debris.length || !["cleaning","paused"].includes(previous))) {
+        this._debrisLayer.replaceChildren();this._debris=[];
+        for(const row of ["bottom","top"]) for(const fraction of [.15,.38,.62,.85]) {
+          const element=document.createElement("span");element.setAttribute("class","debris");element.dataset.collected="false";
+          element.innerHTML="<i></i><i></i><i></i>";this._debrisLayer.append(element);
+          this._debris.push({row,fraction,element,collected:false});
+        }
+      }
+      for(const piece of this._debris) {
+        piece.x=geometry.left+(geometry.right-geometry.left)*piece.fraction;piece.y=geometry[piece.row];
+        piece.element.style.transform=`translate(${piece.x-9}px,${piece.y-8}px)`;
+      }
+      this._debrisLayer.hidden=!this._debris.length;
+    }
+    _collectDebris(pose) {
+      const start=this._debrisPreviousPose || pose;
+      const dx=pose.x-start.x,dy=pose.y-start.y,length=dx*dx+dy*dy;
+      for(const piece of this._debris) {
+        if(piece.collected) continue;
+        const progress=length ? clamp(((piece.x-start.x)*dx+(piece.y-start.y)*dy)/length,0,1) : 0;
+        if(Math.hypot(piece.x-start.x-dx*progress,piece.y-start.y-dy*progress)<=23) {
+          piece.collected=true;piece.element.dataset.collected="true";
+        }
+      }
+      this._debrisPreviousPose=pose;
+    }
+    _startDebrisLoop() {
+      if(this._debrisFrame != null || typeof window.requestAnimationFrame !== "function") return;
+      const canRun=()=>this.isConnected && this._mode === "cleaning" && this._motion?.playState === "running" && !this._controlsOpen && !document.hidden && this._debris?.some(piece=>!piece.collected);
+      if(!canRun()) return;
+      const tick=()=>{
+        this._debrisFrame=null;if(!canRun()) return;
+        this._collectDebris(this._pose());
+        if(canRun()) this._debrisFrame=window.requestAnimationFrame(tick);
+      };
+      this._debrisFrame=window.requestAnimationFrame(tick);
+    }
+    _stopDebrisLoop() {
+      if(this._debrisFrame != null) window.cancelAnimationFrame?.(this._debrisFrame);
+      this._debrisFrame=null;this._debrisPreviousPose=null;
+    }
     _pose() {
       try {
         const matrix = new DOMMatrixReadOnly(getComputedStyle(this._robot).transform);
@@ -495,6 +578,7 @@
       this._stop(pose);
       const reduced = this._media.matches || this._config.animation === false || typeof this._robot.animate !== "function";
       this._card.dataset.motion=String(!reduced);
+      this._syncDebris(mode,previous,g,reduced);
       if(this._controlsOpen) return;
       if(mode === "cleaning") {
         const destination={x:g.right,y:g.bottom,a:-90};
@@ -510,6 +594,7 @@
         this._stop({x:g.dock.x-16,y:g.dock.y,a:0});
       } else if(!previous) this._stop({x:g.right,y:g.bottom,a:0});
       if(document.hidden) this._motion?.pause();
+      this._startDebrisLoop();
     }
     _moveTo(start,end,ms) {
       if(!ms) { this._stop(end); return; }
@@ -545,6 +630,11 @@
         const icon=document.createElement("ha-icon"); icon.setAttribute("icon",name); icon.setAttribute("aria-hidden","true"); parent.replaceChildren(icon);
       } else parent.innerHTML=iconSVG(name);
     }
+    _setButtonContent(button,key) {
+      const definition=buttonDefinition(this._config,key);
+      button.querySelector(".button-label").textContent=definition.name;
+      this._renderIcon(button.querySelector(".button-icon"),definition.icon,definition.icon_image);
+    }
     _renderCustomButtons() {
       const grid=this.shadowRoot.querySelector(".custom-grid"); grid.replaceChildren();
       this._config.custom_buttons.forEach((definition,index)=>{
@@ -564,13 +654,12 @@
     }
     _showControls(open) {
       this._controlsOpen=Boolean(open);
-      if(open) { this._width=this._scene.clientWidth || this._width; this._motion?.pause(); }
+      if(open) { this._width=this._scene.clientWidth || this._width; this._motion?.pause(); this._stopDebrisLoop(); }
       this._scene.hidden=this._controlsOpen;
       this.shadowRoot.querySelector(".controls-panel").hidden=!this._controlsOpen;
       this.shadowRoot.querySelector(".main-actions").hidden=this._controlsOpen;
       const button=this.shadowRoot.querySelector(".more-controls"); button.setAttribute("aria-expanded",String(this._controlsOpen));
-      button.querySelector(".button-label").textContent=open ? "Voltar ao robô" : "Mais controles";
-      this._renderIcon(button.querySelector(".button-icon"),open ? "back" : this._config.icons?.more || "controls");
+      this._setButtonContent(button,open ? "back" : "more");
       if(!open && this._mode) this._animate(this._mode,this._mode);
       if(open) this.shadowRoot.querySelector(".controls-panel button:not(:disabled)")?.focus();
       else button.focus?.();
@@ -644,11 +733,10 @@
     }
     _refreshButtons() {
       const service=this._card.dataset.mode === "cleaning" ? "pause" : "start";
-      const label=service === "pause" ? "Pausar" : this._card.dataset.mode === "paused" ? "Continuar" : "Iniciar limpeza";
+      const key=service === "pause" ? "pause" : this._card.dataset.mode === "paused" ? "resume" : "start";
       const unavailable=["unavailable","unknown","error"].includes(this._card.dataset.mode);
       for(const btn of this.shadowRoot.querySelectorAll('[data-action="primary"]')) {
-        btn.querySelector(".button-label").textContent=label;
-        this._renderIcon(btn.querySelector(".button-icon"),this._config.icons?.[service] || (service === "pause" ? "pause" : "clean"));
+        this._setButtonContent(btn,key);
         btn.disabled=this._pending || unavailable || !this._supports(service);
       }
       for(const [action,command] of [["return","return_to_base"],["stop","stop"],["spot","clean_spot"],["locate","locate"]]) {
@@ -686,12 +774,12 @@
     }
   }
 
-  class AspiradorVivoEditor extends HTMLElement {
+  class VaccumCardAnimationsEditor extends HTMLElement {
     constructor() { super(); this.attachShadow({mode:"open"}); }
     setConfig(config) { this._config={...config}; this._render(); }
     set hass(value) { this._hass=value; this._fillOptions(); this._fillShortcutOptions(); }
     _render() {
-      this.shadowRoot.innerHTML=`<style>:host{display:block;color:var(--primary-text-color);font-family:Roboto,Arial,sans-serif}label{display:grid;gap:7px;margin:16px 0;font-size:14px}input,select{width:100%;padding:11px;border:1px solid var(--divider-color,#888);border-radius:8px;background:var(--card-background-color);color:inherit;font-size:16px;box-sizing:border-box}.check{display:flex;align-items:center;gap:9px}.check input{width:auto}small{color:var(--secondary-text-color);font-size:12px}.shortcut{padding:6px 0 18px;border-bottom:1px solid var(--divider-color,#888)}.shortcut h4{font-size:14px;font-weight:500;margin:10px 0}.shortcut-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}.shortcut .wide{grid-column:1/-1}.shortcut label{min-width:0}.editor-button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;color:inherit;background:var(--secondary-background-color,#8882);border:0;border-radius:10px;font:400 14px Roboto,Arial,sans-serif;margin-top:10px}.editor-button svg{width:20px;height:20px}.editor-button:disabled{opacity:.45}h3{font-size:16px;font-weight:500;margin-top:26px}@media(max-width:360px){.shortcut-fields{grid-template-columns:1fr}}</style>
+      this.shadowRoot.innerHTML=`<style>:host{display:block;color:var(--primary-text-color);font-family:Roboto,Arial,sans-serif}label{display:grid;gap:7px;margin:16px 0;font-size:14px}input,select{width:100%;padding:11px;border:1px solid var(--divider-color,#888);border-radius:8px;background:var(--card-background-color);color:inherit;font-size:16px;box-sizing:border-box}.check{display:flex;align-items:center;gap:9px}.check input{width:auto}small{color:var(--secondary-text-color);font-size:12px}.shortcut{padding:6px 0 18px;border-bottom:1px solid var(--divider-color,#888)}.shortcut h4{font-size:14px;font-weight:500;margin:10px 0}.shortcut-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}.shortcut .wide{grid-column:1/-1}.shortcut label{min-width:0}.editor-button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;color:inherit;background:var(--secondary-background-color,#8882);border:0;border-radius:10px;font:400 14px Roboto,Arial,sans-serif;margin-top:10px}.editor-button svg{width:20px;height:20px}.editor-button:disabled{opacity:.45}h3{font-size:16px;font-weight:500;margin-top:26px}.button-settings{margin-top:22px}.button-settings summary{min-height:44px;padding:12px 0;font-size:14px}[hidden]{display:none!important}@media(max-width:360px){.shortcut-fields{grid-template-columns:1fr}}</style>
       <label>Nome do card<input name="name" type="text"></label>
       <label>Aspirador<select name="entity"></select></label>
       <label>Sensor da bateria<select name="battery_entity"></select></label>
@@ -700,21 +788,31 @@
       <label>Texto dos mops<input name="mop_label" type="text"></label>
       <label class="check"><input name="show_controls" type="checkbox">Mostrar controles</label>
       <label class="check"><input name="animation" type="checkbox">Animar o aspirador</label>
+      <label class="check"><input name="dirt" type="checkbox">Mostrar sujeiras no percurso</label>
       <label class="check"><input name="sound" type="checkbox">Som de seleção nos botões</label>
       <label>Volume do som<input name="sound_volume" type="range" min="0" max="1" step="0.01"></label>
       <small>Sem sensor selecionado, o card usa os atributos do aspirador. Ajuste unidades e atributos pelo YAML quando necessário.</small>
+      <details class="button-settings"><summary class="cursor-interaction">Personalizar todos os botões</summary>
+        <label>Botão<select data-button-picker></select></label>
+        <label>Nome exibido<input type="text" data-control-field="name" maxlength="120"></label>
+        <label>Ícone<input type="text" data-control-field="icon" list="vca-button-icons" placeholder="pause ou mdi:pause-circle"></label>
+        <datalist id="vca-button-icons"></datalist>
+        <label>Imagem do ícone (opcional)<input type="text" data-control-field="icon_image" placeholder="/local/icones/meu-icone.svg"></label>
+        <button type="button" class="editor-button reset-control cursor-interaction">Restaurar este botão</button>
+      </details>
       <h3>Botões personalizados</h3><div class="shortcut-list"></div><button type="button" class="editor-button add-shortcut cursor-interaction">${iconSVG("add")}Adicionar botão</button>`;
       for(const key of ["name","mop_label"]) this.shadowRoot.querySelector(`[name="${key}"]`).value=this._config[key] || (key === "name" ? CARD_NAME : "Mops · tempo restante");
-      for(const key of ["show_controls","animation","sound"]) this.shadowRoot.querySelector(`[name="${key}"]`).checked=this._config[key] !== false;
+      for(const key of ["show_controls","animation","dirt","sound"]) this.shadowRoot.querySelector(`[name="${key}"]`).checked=this._config[key] !== false;
       this.shadowRoot.querySelector('[name="sound_volume"]').value=clamp(number(this._config.sound_volume) ?? 0.18,0,1);
       this._fillOptions();
-      this.shadowRoot.querySelectorAll("input,select").forEach(input=>input.addEventListener("change",()=> {
+      this.shadowRoot.querySelectorAll("input[name],select[name]").forEach(input=>input.addEventListener("change",()=> {
         const value=input.type === "checkbox" ? input.checked : input.name === "sound_volume" ? Number(input.value) : input.value;
         const config={...this._config,[input.name]:value};
         if(value === "") delete config[input.name];
         this._config=config;
         this.dispatchEvent(new CustomEvent("config-changed",{detail:{config},bubbles:true,composed:true}));
       }));
+      this._renderButtonSettings();
       this.shadowRoot.querySelector(".add-shortcut").addEventListener("click",()=>{
         const buttons=[...(this._config.custom_buttons || [])];
         if(buttons.length>=12) return;
@@ -724,6 +822,37 @@
       this._renderShortcuts();
     }
     _emit() { this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this._config},bubbles:true,composed:true})); }
+    _renderButtonSettings() {
+      const picker=this.shadowRoot.querySelector("[data-button-picker]");
+      for(const [key,definition] of Object.entries(BUTTONS)) {
+        const option=document.createElement("option");option.value=key;option.textContent=definition.name;picker.append(option);
+      }
+      picker.value=this._selectedButton && BUTTONS[this._selectedButton] ? this._selectedButton : "start";
+      picker.addEventListener("change",()=>{this._selectedButton=picker.value;this._fillButtonSettings();});
+      const suggestions=this.shadowRoot.querySelector("datalist");
+      for(const [key,label] of Object.entries(iconNames)) {
+        const option=document.createElement("option");option.value=key;option.textContent=label;suggestions.append(option);
+      }
+      for(const input of this.shadowRoot.querySelectorAll("[data-control-field]")) input.addEventListener("change",()=>{
+        const key=picker.value,field=input.dataset.controlField;if(!Object.prototype.hasOwnProperty.call(BUTTONS,key)) return;
+        const buttons={...this._config.buttons},current={...buttons[key]};
+        if(input.value.trim()) current[field]=input.value.trim();else delete current[field];
+        if(Object.keys(current).length) buttons[key]=current;else delete buttons[key];
+        this._config={...this._config,buttons};this._emit();this._fillButtonSettings();
+      });
+      this.shadowRoot.querySelector(".reset-control").addEventListener("click",()=>{
+        const key=picker.value,buttons={...this._config.buttons},icons={...this._config.icons};delete buttons[key];delete icons[key];
+        if(key === "resume" && icons.start) buttons.resume={icon:BUTTONS.resume.icon};
+        this._config={...this._config,buttons,icons};this._emit();this._fillButtonSettings();
+      });
+      this._fillButtonSettings();
+    }
+    _fillButtonSettings() {
+      const key=this.shadowRoot.querySelector("[data-button-picker]").value;
+      if(!Object.prototype.hasOwnProperty.call(BUTTONS,key)) return;
+      const definition=buttonDefinition(this._config,key);
+      for(const field of ["name","icon","icon_image"]) this.shadowRoot.querySelector(`[data-control-field="${field}"]`).value=definition[field];
+    }
     _renderShortcuts() {
       const list=this.shadowRoot.querySelector(".shortcut-list"); if(!list) return;
       list.replaceChildren();
@@ -780,8 +909,12 @@
       }
     }
   }
-  if(!customElements.get(TYPE)) customElements.define(TYPE,AspiradorVivoCard);
-  if(!customElements.get(TYPE+"-editor")) customElements.define(TYPE+"-editor",AspiradorVivoEditor);
+  if(!customElements.get(TYPE)) customElements.define(TYPE,VaccumCardAnimations);
+  if(!customElements.get(TYPE+"-editor")) customElements.define(TYPE+"-editor",VaccumCardAnimationsEditor);
+  if(!customElements.get(LEGACY_TYPE)) customElements.define(LEGACY_TYPE,class extends VaccumCardAnimations {});
+  if(!customElements.get(LEGACY_TYPE+"-editor")) customElements.define(LEGACY_TYPE+"-editor",class extends VaccumCardAnimationsEditor {});
   window.customCards=window.customCards || [];
+  // Replace the old picker entry if an earlier bundle was already loaded.
+  window.customCards=window.customCards.filter(card=>card.type !== LEGACY_TYPE);
   if(!window.customCards.some(card=>card.type === TYPE)) window.customCards.push({type:TYPE,name:CARD_NAME,description:"Robô animado, temas e cores, controles personalizados e som de seleção.",preview:true,getEntitySuggestion:(hass,entityId)=>entityId.startsWith("vacuum.") ? {entity:entityId} : null});
 })();
