@@ -1,4 +1,4 @@
-/* Vaccum card-animations 1.4.0 — Home Assistant custom card, no external dependencies. */
+/* Vaccum card-animations 1.5.0 — Home Assistant custom card, no external dependencies. */
 (() => {
   "use strict";
   const TYPE = "vaccum-card-animations";
@@ -136,8 +136,6 @@
     [data-mode=cleaning] .dot, [data-mode=docked] .dot { background:var(--vca-accent); }
     [data-mode=error] .dot { background:var(--vca-error); }
     .scene { position:relative; height:248px; margin:0 8px; overflow:hidden; }
-    .floor { position:absolute; inset:64px 8px 7px; border-radius:20px; background:linear-gradient(180deg,transparent,var(--vca-floor)); }
-    .tiles { position:absolute; inset:88px 10px 10px; background-image:linear-gradient(90deg,var(--vca-line) 1px,transparent 1px),linear-gradient(var(--vca-line) 1px,transparent 1px); background-size:46px 46px; opacity:.22; mask-image:linear-gradient(transparent,#000); }
     .debris-layer { position:absolute; inset:0; pointer-events:none; }
     .debris { position:absolute; width:18px; height:16px; opacity:1; transition:opacity .18s ease-out; }
     .debris[data-collected=true] { opacity:0; }
@@ -162,33 +160,7 @@
     .activity b { color:var(--vca-values); font-weight:500; font-variant-numeric:tabular-nums; }
     [data-active=true] .stats { opacity:0; transform:translateX(-8px); pointer-events:none; }
     [data-active=true] .top-battery, [data-active=true] .activity { opacity:1; transform:none; }
-    .dock { position:absolute; right:16px; bottom:46px; width:70px; height:116px; }
-    .dock-shadow { position:absolute; bottom:-20px; left:-9px; width:89px; height:37px; background:var(--vca-shadow); border-radius:50%; filter:blur(6px); }
-    .tower { position:absolute; inset:0 2px 6px; border-radius:15px 15px 10px 10px; background:linear-gradient(110deg,#fff,#e0e6e9 60%,#b7c3cc); box-shadow:inset 2px 0 3px #fff,4px 5px 6px #0002; }
-    .tower::before { content:""; position:absolute; top:6px; left:10px; right:10px; height:3px; background:#c6d0d6; border-radius:4px; }
-    .dock-face { position:absolute; top:27px; left:8px; right:8px; height:40px; border-radius:6px; background:linear-gradient(120deg,#36434b,#1a242c); }
-    .dock-led { position:absolute; top:12px; left:27px; width:8px; height:3px; border-radius:5px; background:#7ddbc7; box-shadow:0 0 5px #58d6b980; }
-    .dock-port { position:absolute; bottom:8px; left:15px; right:15px; height:22px; background:#45545e; border-radius:8px 8px 0 0; }
-    .tray { position:absolute; bottom:-24px; left:-9px; width:88px; height:47px; border-radius:12px 12px 23px 23px; background:linear-gradient(#bdcbd2,#dce3e8); box-shadow:0 3px 4px #0002; }
-    .dock-label { position:absolute; bottom:-42px; left:0; right:0; text-align:center; color:var(--vca-muted); font-size:11px; }
-    .mover { position:absolute; left:0; top:0; width:70px; height:70px; will-change:transform; z-index:2; }
-    .robot-shadow { position:absolute; inset:6px -3px -6px; border-radius:50%; background:#0003; filter:blur(4px); }
-    .halo { position:absolute; inset:-12px; border-radius:50%; background:radial-gradient(circle,#65dcca28,transparent 67%); opacity:0; transition:opacity .3s; }
-    .mop { position:absolute; bottom:-3px; width:24px; height:24px; border-radius:50%; background:repeating-conic-gradient(#63bfb4 0deg 20deg,#abd9d1 20deg 40deg); box-shadow:0 0 0 2px #2d5a5815; animation:vca-spin 2s linear infinite paused; }
-    .mop.left { left:5px; } .mop.right { right:5px; animation-direction:reverse; }
-    .brush { position:absolute; left:-7px; top:9px; width:29px; height:29px; animation:vca-spin 1.1s linear infinite paused; }
-    .brush i { position:absolute; top:13px; left:14px; width:19px; height:2px; border-radius:2px; background:#57757d; transform-origin:0 50%; }
-    .brush i:nth-child(2) { transform:rotate(120deg); } .brush i:nth-child(3) { transform:rotate(240deg); }
-    .shell { position:absolute; inset:0; border-radius:50%; background:linear-gradient(135deg,#fff 10%,#f1f5f7 46%,#b4c3cd); box-shadow:inset 0 -4px 0 #869ba8,inset 0 2px 1px #fff,0 2px 5px #0003; }
-    .shell::before { content:""; position:absolute; inset:5px; border:1px solid #afc0cb80; border-radius:50%; }
-    .bumper { position:absolute; top:4px; left:22px; width:26px; height:4px; border-radius:6px; background:#3c505d; }
-    .lidar { position:absolute; top:22px; left:24px; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#fff,#adbecb); box-shadow:0 2px 3px #0003,inset 0 0 0 1px #acbac4; }
-    .lidar::after { content:""; position:absolute; inset:4px; border-radius:50%; background:linear-gradient(120deg,#687d8c,#324956); border:2px solid #d6e0e5; }
-    .robot-led { position:absolute; bottom:10px; left:31px; width:8px; height:3px; border-radius:5px; background:#5bc8b3; }
-    [data-mode=cleaning] .mop, [data-mode=cleaning] .brush { animation-play-state:running; }
-    [data-motion=false] .mop, [data-motion=false] .brush { animation:none; }
-    [data-mode=cleaning] .halo { opacity:1; }
-    [data-mode=error] .robot-led { background:#f07c70; }
+    .dock,.mover { position:absolute; left:0; top:0; }
     [data-mode=unavailable] .mover, [data-mode=unknown] .mover, [data-mode=unavailable] .dock, [data-mode=unknown] .dock { opacity:.4; }
     footer { padding:12px 20px 16px; border-top:1px solid var(--vca-line); }
     .main-actions { display:flex; gap:8px; }
@@ -230,22 +202,266 @@
     .appearance-note, .appearance-adjusted { color:var(--vca-muted); margin:11px 0 0; font-size:12px; line-height:1.5; }
     .service-message { padding:0 22px 13px; color:var(--vca-error); font-size:12px; overflow-wrap:anywhere; }
     [hidden] { display:none !important; }
-    @keyframes vca-spin { to { transform:rotate(360deg); } }
     @keyframes vca-panel { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
     @container (max-width:330px) { header { padding:18px 16px 9px; } .stats { right:120px; left:8px; } .activity { left:8px; gap:7px; right:108px; } .metric-label { font-size:11px; } footer { padding:11px 14px 14px; } .controls-panel { padding:12px 14px 16px; } .control-tile { padding:12px; } }
-    @media (prefers-reduced-motion:reduce) { .mop,.brush,.controls-panel { animation:none; } .stats,.top-battery,.activity,.battery-fill,.debris { transition:none; } }
+    @media (prefers-reduced-motion:reduce) { .controls-panel { animation:none; } .stats,.top-battery,.activity,.battery-fill,.debris { transition:none; } }
+  `;
+
+/* All parts rotate around the same vertical axis. Cloth touches height 0. */
+const FloorRobotModel=(() => {
+  "use strict";
+  const TAU=Math.PI*2,pitch=20*Math.PI/180,SIN=Math.sin(pitch),COS=Math.cos(pitch);
+  const mix=(rgb,light)=>`rgb(${rgb.map(c=>Math.round(Math.max(0,Math.min(255,c*light)))).join(",")})`;
+  function point(x,d,h,yaw) {
+    const a=yaw*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
+    const right=x*c+d*s,front=d*c-x*s;
+    return {x:80+right,y:91+front*SIN-h*COS,depth:front*COS+h*SIN};
+  }
+  class FloorRobot {
+    constructor(canvas) {
+      this.canvas=canvas;this.ctx=canvas.getContext?.("2d") || null;
+      const resolution=Math.min(3,window.devicePixelRatio || 2);
+      canvas.width=160*resolution;canvas.height=126*resolution;this.resolution=resolution;
+    }
+    draw(yaw=0,phase=0) {
+      const c=this.ctx;if(!c)return;
+      c.setTransform(this.resolution,0,0,this.resolution,0,0);c.clearRect(0,0,160,126);
+      const project=(x,d,h)=>point(x,d,h,yaw);
+      const polygon=(points,fill,stroke=null,width=.5)=>{
+        c.beginPath();points.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.closePath();
+        c.fillStyle=fill;c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}
+      };
+      const ring=(x,d,h,r,n=96)=>Array.from({length:n},(_,i)=>project(x+Math.sin(i*TAU/n)*r,d+Math.cos(i*TAU/n)*r,h));
+      const cylinder=(x,d,bottom,top,r,color,material=null)=>{
+        const n=96;
+        for(let i=0;i<n;i++) {
+          const a=i*TAU/n,b=(i+1)*TAU/n,m=(a+b)/2,world=m+yaw*Math.PI/180;
+          if(Math.cos(world)<-.025)continue;
+          const light=.84+.15*Math.cos(world)+.1*(-Math.sin(world));
+          const fill=mix(material?material(m):color,light);
+          polygon([project(x+Math.sin(a)*r,d+Math.cos(a)*r,bottom),project(x+Math.sin(b)*r,d+Math.cos(b)*r,bottom),project(x+Math.sin(b)*r,d+Math.cos(b)*r,top),project(x+Math.sin(a)*r,d+Math.cos(a)*r,top)],fill,fill,.85);
+        }
+      };
+      const disk=(x,d,h,r,color)=>polygon(ring(x,d,h,r),color);
+      const surfaceLine=(points,color,width)=>{c.beginPath();points.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.strokeStyle=color;c.lineWidth=width;c.lineCap="round";c.stroke();};
+      c.save();c.translate(82,92);c.scale(1,.32);
+      const shadow=c.createRadialGradient(0,0,26,0,0,65);shadow.addColorStop(0,"#14252c65");shadow.addColorStop(.68,"#14252c35");shadow.addColorStop(1,"#14252c00");
+      c.fillStyle=shadow;c.beginPath();c.arc(0,0,65,0,TAU);c.fill();c.restore();
+      // Thin rear pads, spinning in the floor plane, not vertical supporting feet.
+      for(const [x,direction] of [[-22,1],[22,-1]]) {
+        cylinder(x,-26,0,1.5,20,[91,123,120]);disk(x,-26,1.5,20,"#b6ccc6");
+        for(let i=0;i<18;i++) {
+          const a=i*TAU/18+phase*direction*3.5;
+          surfaceLine([project(x+Math.sin(a)*7,-26+Math.cos(a)*7,1.6),project(x+Math.sin(a)*19,-26+Math.cos(a)*19,1.6)],"#72958b",.7);
+        }
+      }
+      for(let i=0;i<3;i++) {
+        const a=phase*5+i*TAU/3;
+        for(let strand=-1;strand<=1;strand++)surfaceLine([project(38,19,.9),project(38+Math.cos(a)*24+strand,19+Math.sin(a)*24,0)],"#6e818780",.7);
+      }
+      cylinder(0,0,2.5,7,48,[44,55,61]);cylinder(0,0,5,27,52,[226,234,238]);
+      cylinder(0,0,11,22,52.25,[36,49,58],angle=>Math.abs(Math.atan2(Math.sin(angle),Math.cos(angle)))<1.72?[33,45,55]:[200,215,221]);
+      cylinder(0,0,6,9,51.5,[188,204,213]);
+      const cap=c.createLinearGradient(30,50,126,95);cap.addColorStop(0,"#ffffff");cap.addColorStop(.42,"#f6fafc");cap.addColorStop(1,"#c9d8df");
+      disk(0,0,27.1,52,cap);polygon(ring(0,0,27.25,48.5),"#ffffff10","#adc0cb99",.65);
+      surfaceLine([-33,-22,0,22,33].map(x=>project(x,-9,27.4)),"#bacbd46b",.6);
+      for(const x of [-5,5]){disk(x,23,27.7,3,"#a7beca");disk(x,23,27.9,1.25,"#78d8c4");}
+      const patch=(angle,half,low,high,fill)=>{
+        const middle=angle+yaw*Math.PI/180;if(Math.cos(middle)<=.035)return;
+        const points=[];
+        for(let i=0;i<=8;i++){const a=angle-half+2*half*i/8;points.push(project(Math.sin(a)*52.65,Math.cos(a)*52.65,low));}
+        for(let i=8;i>=0;i--){const a=angle-half+2*half*i/8;points.push(project(Math.sin(a)*52.65,Math.cos(a)*52.65,high));}
+        polygon(points,fill);
+      };
+      patch(0,.195,12.5,20.5,"#617b8d");patch(0,.177,13.3,19.7,"#0d1c28");patch(-.055,.055,14.2,18.8,"#31526a");patch(-.068,.018,17.1,18.2,"#a9cedb");patch(.58,.066,14,18,"#112331");
+      for(let i=-4;i<=4;i++)patch(Math.PI+i*.07,.012,12,18,"#566d798c");
+      patch(Math.PI-.55,.06,8,11,"#9e9071");patch(Math.PI+.55,.06,8,11,"#9e9071");
+      const lidar=project(0,-7,27.5);
+      c.save();c.translate(lidar.x+1,lidar.y+1);c.scale(1,.4);c.fillStyle="#40566825";c.beginPath();c.ellipse(0,0,15,15,0,0,TAU);c.fill();c.restore();
+      cylinder(0,-7,27.5,36,12,[222,233,238]);cylinder(0,-7,28.5,31,12.1,[42,63,77]);
+      const lidarTop=c.createLinearGradient(lidar.x-10,lidar.y-10,lidar.x+12,lidar.y);lidarTop.addColorStop(0,"#fff");lidarTop.addColorStop(1,"#c7d8e1");
+      disk(0,-7,36,12,lidarTop);polygon(ring(0,-7,36.1,10.2),"#ffffff10","#a5bfce70",.5);
+    }
+  }
+  return {FloorRobot,point,mopBottom:0,mopThickness:1.5};
+})();
+
+/* Image choices are independent per surface and scoped to this card/browser. */
+const Scenery=(() => {
+  "use strict";
+  const SURFACES=["floor","wall"];
+  const TYPES=["image/jpeg","image/png","image/webp"];
+  const isImage=src=>typeof src === "string" && src.length<=1500000 && /^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(src);
+  const CSS=`
+    .front-scene-image { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; pointer-events:none; }
+    .front-wall::after { z-index:1; }
+    .front-floor[data-custom-image=true] .front-grain { display:none; }
+    .front-floor[data-custom-image=true] .front-light { opacity:.15; }
+    [data-scene-image=true] .stats { right:calc(50% + 12px); padding:8px; border-radius:12px; background:var(--vca-bg); }
+    [data-scene-image=true] .top-battery { padding:8px 10px; border-radius:12px; background:var(--vca-bg); }
+    [data-scene-image=true] .activity { padding:7px 10px; border-radius:10px; background:var(--vca-bg); }
+    [data-scene-image=true][data-active=true] .stats { visibility:hidden; }
+    [data-scene-image=true][data-active=false] .top-battery,[data-scene-image=true][data-active=false] .activity { visibility:hidden; }
+    [data-scene-image=true] .debris { filter:drop-shadow(0 1px 1px #0009) drop-shadow(0 -1px 1px #fff7); }
+    .scene-images { margin-top:20px; padding-top:16px; border-top:1px solid var(--vca-line); }
+    .scene-images h4 { margin:0 0 13px; font-size:14px; font-weight:500; color:var(--vca-ink); }
+    .scene-image-row { display:grid; grid-template-columns:58px minmax(0,1fr); gap:12px; align-items:start; margin-top:17px; }
+    .scene-image-thumb { width:58px; height:58px; position:relative; border-radius:9px; overflow:hidden; background:linear-gradient(135deg,var(--vca-floor),var(--vca-line)); }
+    .scene-image-thumb img { width:100%; height:100%; object-fit:cover; }
+    .scene-image-label { display:block; color:var(--vca-ink); font-size:13px; margin:0 0 5px; }
+    .scene-image-name { display:block; margin:0; font-size:12px; color:var(--vca-muted); overflow-wrap:anywhere; }
+    .scene-image-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:9px; }
+    .scene-file-control { position:relative; display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 12px; box-sizing:border-box; border-radius:10px; color:var(--vca-ink); background:var(--vca-floor); font-size:13px; overflow:hidden; }
+    .scene-file-control input { position:absolute; inset:0; width:100%; height:100%; opacity:0; }
+    .scene-file-control:focus-within { outline:2px solid var(--vca-accent); outline-offset:2px; }
+    .scene-image-remove { flex:none; min-height:44px; padding:9px 12px; font-weight:400; background:transparent; color:var(--vca-muted); }
+    .scene-image-note,.scene-image-status { margin:12px 0 0; font-size:12px; line-height:1.5; color:var(--vca-muted); }
+    .scene-image-status[role=alert] { color:var(--vca-error); }
+  `;
+  class Scenery {
+    constructor(card) {this.card=card;this.images={floor:null,wall:null};this.tokens={floor:0,wall:0};this.storageKey=null;}
+    attach() {
+      const key=this.card._appearanceStorageKey+":scenery:v1";
+      if(key!==this.storageKey) {
+        this.storageKey=key;this.images={floor:null,wall:null};
+        try {
+          const stored=JSON.parse(window.localStorage?.getItem(key) || "null");
+          if(stored?.version===1)for(const surface of SURFACES) {
+            const saved=stored.images?.[surface];
+            if(saved && isImage(saved.src))this.images[surface]={src:saved.src,name:String(saved.name || "Sua imagem").slice(0,200)};
+          }
+        } catch {}
+      }
+      const style=document.createElement("style");style.textContent=CSS;this.card.shadowRoot.append(style);
+      const panel=document.createElement("section");panel.setAttribute("class","scene-images");panel.setAttribute("aria-label","Imagens do cenário");
+      panel.innerHTML='<h4>Cenário</h4>'+SURFACES.map(surface=>{
+        const label=surface === "floor" ? "Imagem do chão" : "Imagem da parede";
+        return `<div class="scene-image-row"><div class="scene-image-thumb" aria-hidden="true"><img data-scene-thumb="${surface}" alt="" hidden></div><div><label class="scene-image-label" for="scene-file-${surface}">${label}</label><span class="scene-image-name" data-scene-name="${surface}">Padrão</span><div class="scene-image-actions"><label class="scene-file-control cursor-interaction"><span>Escolher imagem</span><input class="cursor-interaction" type="file" id="scene-file-${surface}" data-scene-file="${surface}" accept="image/jpeg,image/png,image/webp" aria-label="${label}"></label><button type="button" class="scene-image-remove cursor-interaction" data-scene-remove="${surface}" aria-label="Restaurar ${surface === "floor" ? "chão" : "parede"} padrão" hidden>Restaurar</button></div></div></div>`;
+      }).join("")+'<p class="scene-image-note">JPG, PNG ou WebP · até 12 MB. Suas imagens ficam salvas neste dispositivo.</p><p class="scene-image-status" role="status" aria-live="polite" hidden></p>';
+      this.panel=panel;this.card.shadowRoot.querySelector(".appearance-options").append(panel);
+      for(const surface of SURFACES) {
+        this.tokens[surface]++;
+        const layer=this.card.shadowRoot.querySelector(surface === "floor"?".front-floor":".front-wall");
+        const image=document.createElement("img");image.setAttribute("class","front-scene-image");image.setAttribute("alt","");image.setAttribute("data-scene-image",surface);image.hidden=true;layer.append(image);
+        const input=panel.querySelector(`[data-scene-file="${surface}"]`);
+        input.addEventListener("click",()=>this.card._playSelectionSound());
+        input.addEventListener("change",()=>{const file=input.files?.[0];if(file)this.choose(surface,file);input.value="";});
+        panel.querySelector(`[data-scene-remove="${surface}"]`).addEventListener("click",()=>{this.card._playSelectionSound();this.tokens[surface]++;this.images[surface]=null;this.apply();this.save();});
+      }
+      this.card.shadowRoot.querySelector(".appearance-reset").addEventListener("click",()=>{
+        for(const surface of SURFACES){this.tokens[surface]++;this.images[surface]=null;}this.apply();this.save();
+      });
+      this.apply();
+    }
+    message(text,error=false) {
+      const status=this.panel.querySelector(".scene-image-status");status.textContent=text;status.hidden=!text;status.setAttribute("role",error?"alert":"status");
+    }
+    apply() {
+      this.card._card.dataset.sceneImage=String(SURFACES.some(surface=>!!this.images[surface]));
+      for(const surface of SURFACES) {
+        const value=this.images[surface];
+        const image=this.card.shadowRoot.querySelector(`[data-scene-image="${surface}"]`);
+        const thumbnail=this.panel.querySelector(`[data-scene-thumb="${surface}"]`);
+        for(const element of [image,thumbnail]) {
+          element.hidden=!value;if(value)element.setAttribute("src",value.src);else element.removeAttribute("src");
+        }
+        this.card.shadowRoot.querySelector(surface === "floor"?".front-floor":".front-wall").dataset.customImage=String(!!value);
+        this.panel.querySelector(`[data-scene-name="${surface}"]`).textContent=value?.name || "Padrão";
+        this.panel.querySelector(`[data-scene-remove="${surface}"]`).hidden=!value;
+      }
+    }
+    save() {
+      try {
+        if(!window.localStorage)throw new Error("Storage unavailable");
+        window.localStorage.setItem(this.storageKey,JSON.stringify({version:1,images:this.images}));
+        this.message("Cenário salvo neste dispositivo.");
+      } catch {this.message("Cenário aplicado. Este navegador não permitiu salvar as imagens para a próxima visita.",true);}
+    }
+    async choose(surface,file) {
+      if(!SURFACES.includes(surface))return;
+      const token=++this.tokens[surface],key=this.storageKey;
+      this.message("Preparando imagem…");
+      try {
+        if(file.size>12*1024*1024)throw new Error("Escolha uma imagem de até 12 MB.");
+        if(file.type?!TYPES.includes(file.type):!(/\.(jpe?g|png|webp)$/i.test(file.name)))throw new Error("Escolha uma imagem JPG, PNG ou WebP.");
+        const source=await new Promise((resolve,reject)=>{
+          const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error("Não foi possível ler esse arquivo."));reader.readAsDataURL(file);
+        });
+        const image=await new Promise((resolve,reject)=>{
+          const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error("Não foi possível abrir essa imagem. Escolha outro arquivo."));image.src=source;
+        });
+        if(!image.naturalWidth || !image.naturalHeight || image.naturalWidth*image.naturalHeight>48000000)throw new Error("Escolha uma imagem com até 48 megapixels.");
+        const canvas=document.createElement("canvas"),scale=Math.min(1,1024/Math.max(image.naturalWidth,image.naturalHeight));
+        canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+        canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
+        const src=canvas.toDataURL("image/webp",.82);
+        if(!isImage(src))throw new Error("Essa imagem ficou grande demais. Escolha um arquivo menor.");
+        if(token!==this.tokens[surface] || key!==this.storageKey || !this.card.isConnected)return;
+        this.images[surface]={src,name:String(file.name || "Sua imagem").slice(0,200)};
+        this.apply();this.save();
+      } catch(error) {
+        if(token===this.tokens[surface] && key===this.storageKey)this.message(error.message || "Não foi possível usar essa imagem.",true);
+      }
+    }
+  }
+  return Scenery;
+})();
+
+  const DOCK={x:.84,z:.89,yaw:0};
+  const ease=t=>t*t*t*(t*(t*6-15)+10);
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const metric=(a,b)=>Math.hypot(a.x-b.x,(a.z-b.z)*.72);
+  const CORNERS=[{x:.84,z:.70},{x:.16,z:.70},{x:.16,z:.24},{x:.84,z:.24}];
+  const angleDelta=(from,to)=>(((to-from+180)%360)+360)%360-180;
+  // Integrate a smooth velocity ramp, cruise, then brake before every maneuver.
+  function travelProgress(t) {
+    const ramp=.14;
+    if(t<ramp){const u=t/ramp;return ramp*(u*u*u-.5*u*u*u*u)/(1-ramp);}
+    if(t>1-ramp)return 1-travelProgress(1-t);
+    return (t-ramp/2)/(1-ramp);
+  }
+  const FRONT_CSS=`
+    .scene { height:310px; margin:0 6px; border-radius:18px; isolation:isolate; }
+    .front-wall { position:absolute; inset:0 0 auto; height:87px; background:linear-gradient(110deg,var(--vca-bg),var(--vca-floor)); }
+    .front-wall::after { content:""; position:absolute; left:0; right:0; bottom:0; height:8px; background:linear-gradient(var(--vca-line),var(--vca-bg) 30%,var(--vca-floor)); box-shadow:0 4px 7px var(--vca-shadow); }
+    .front-floor { position:absolute; inset:86px 0 0; overflow:hidden; background:linear-gradient(180deg,var(--vca-floor),var(--vca-bg)); }
+    .front-grain { position:absolute; left:-35%; right:-35%; top:-10px; height:490px; transform:perspective(270px) rotateX(58deg); transform-origin:50% 0; background:repeating-linear-gradient(90deg,transparent 0 85px,var(--vca-line) 85px 86px,transparent 86px 172px),repeating-linear-gradient(0deg,transparent 0 4px,var(--vca-line) 4px 4.4px); opacity:.22; }
+    .front-light { position:absolute; right:4%; top:2px; width:45%; height:150px; transform:skewX(-26deg) skewY(-7deg); background:linear-gradient(120deg,#ffffff18,transparent); filter:blur(7px); pointer-events:none; }
+    [data-active=false] .front-light { opacity:0; }
+    .stats { top:24px; left:14px; right:calc(50% + 3px); gap:17px; z-index:4; }
+    .stats .metric-label { font-size:12px; }
+    .stats .metric-value { font-size:22px; }
+    .stats .metric:not(:first-child) .metric-value { font-size:17px; }
+    .top-battery { top:9px; left:14px; right:14px; z-index:4; }
+    .top-battery strong { font-size:21px; }
+    .activity { bottom:13px; left:14px; right:14px; z-index:4; }
+    .debris-layer { z-index:1; }
+    .debris { transform-origin:0 0; filter:drop-shadow(0 1px 1px #0002); }
+    .debris[data-revealed=false] { opacity:0; }
+    .mover { width:160px; height:126px; transform-origin:0 0; will-change:transform; z-index:3; }
+    .front-canvas { display:block; width:160px; height:126px; }
+    .dock { left:0; top:0; right:auto; bottom:auto; width:106px; height:125px; transform-origin:0 0; z-index:2; }
+    .front-dock-shadow { position:absolute; left:-14px; right:-18px; bottom:-4px; height:30px; border-radius:50%; background:#0000002b; filter:blur(6px); }
+    .front-dock-body { position:absolute; left:8px; right:8px; top:5px; height:105px; border-radius:13px 13px 8px 8px; background:linear-gradient(100deg,#aebfc8,#fafcfd 20%,#edf3f6 77%,#a6bac6); box-shadow:inset 2px 0 0 #fff9,inset -2px 0 1px #66809050,0 2px 2px #0002; }
+    .front-dock-top { position:absolute; left:9px; right:9px; top:0; height:12px; border-radius:50%; background:linear-gradient(160deg,#fff,#d9e5eb); border:1px solid #c6d6df; }
+    .front-dock-face { position:absolute; left:17px; right:17px; top:26px; height:60px; border-radius:7px; background:linear-gradient(120deg,#526774,#283c49 40%,#112533); box-shadow:inset 0 1px 1px #a4b7c64d; }
+    .front-dock-face::before { content:""; position:absolute; top:15px; left:29px; width:9px; height:3px; border-radius:4px; background:#6bdbc5; box-shadow:0 0 6px #49c5aa6b; }
+    .front-dock-slot { position:absolute; left:25px; right:25px; top:91px; height:10px; border-radius:8px 8px 0 0; background:linear-gradient(#132c3b,#617984); }
+    .front-dock-tray { position:absolute; left:0; right:0; top:105px; height:20px; border-radius:10% 10% 45% 45%; background:linear-gradient(#cbdbe3,#9eb6c5); border-bottom:2px solid #627f9166; box-shadow:0 2px 2px #0002; }
   `;
 
   class VaccumCardAnimations extends HTMLElement {
     constructor() {
       super(); this.attachShadow({mode:"open"}); this._mode = null; this._motion = null; this._pending = false; this._controlsOpen = false;
+      this._front={pose:{...DOCK},task:null,dust:[],lastMode:null,frame:null,lastTime:null,playTime:0,brushTime:0};
+      this._scenery=new Scenery(this);
       this._media = window.matchMedia("(prefers-reduced-motion: reduce)");
       this._colorMedia = window.matchMedia("(prefers-color-scheme: dark)");
       this._colorMediaChanged = () => { if(this.isConnected) this._applyAppearance(true); };
       this._mediaChanged = () => { if(this.isConnected) this._animate(this._mode,this._mode); };
       this._visibility = () => {
-        if(document.hidden || this._controlsOpen) { this._motion?.pause(); this._stopDebrisLoop(); }
-        else { this._motion?.play(); this._startDebrisLoop(); }
+        if(document.hidden || this._controlsOpen) { this._motion?.pause(); this._frontHalt(); }
+        else { this._motion?.play(); }
       };
       this.shadowRoot.addEventListener("keydown",event=>{if(event.key === "Escape" && this._controlsOpen) this._showControls(false);});
     }
@@ -255,17 +471,21 @@
       if (!config || typeof config.entity !== "string" || !config.entity.startsWith("vacuum.")) throw new Error(`Escolha uma entidade vacuum para o ${CARD_NAME}.`);
       if(config.custom_buttons !== undefined && (!Array.isArray(config.custom_buttons) || config.custom_buttons.length>12)) throw new Error("Use uma lista de até 12 botões personalizados.");
       if(config.buttons !== undefined && (!config.buttons || typeof config.buttons !== "object" || Array.isArray(config.buttons))) throw new Error("Configure buttons como um objeto de botões.");
-      this._config = {name:CARD_NAME, show_controls:true, animation:true, dirt:true, sound:true, sound_volume:0.18, theme:"auto", cycle_seconds:18, mop_label:"Mops · tempo restante", custom_buttons:[], buttons:{}, icons:{}, ...config};
+      if(this._config && this._config.entity !== config.entity) {
+        this._motion?.cancel();this._motion=null;
+        this._front={pose:{...DOCK},task:null,dust:[],lastMode:null,frame:null,lastTime:null,playTime:0,brushTime:0};
+      }
+      this._config = {name:CARD_NAME, show_controls:true, animation:true, dirt:true, sound:true, sound_volume:0.18, theme:"auto", cycle_seconds:28, mop_label:"Mops · tempo restante", custom_buttons:[], buttons:{}, icons:{}, ...config};
       this._config.sound_volume=clamp(number(config.sound_volume) ?? 0.18,0,1);
       this._config.custom_buttons=this._config.custom_buttons.filter(b=>b && typeof b === "object").map(b=>({...b}));
       this._controlsOpen=false;
-      this._config.cycle_seconds = clamp(number(config.cycle_seconds) || 18,8,90);
+      this._config.cycle_seconds = clamp(number(config.cycle_seconds) || 28,24,90);
       this._loadAppearance();
       this._render(); this._mode = null; this._update();
     }
     set hass(value) { this._hass = value; if(this._config) this._update(); }
     get hass() { return this._hass; }
-    getCardSize() { return Math.ceil((this._card?.offsetHeight || (this._controlsOpen ? (this.shadowRoot.querySelector(".appearance")?.open ? 990 : 690) : this._config?.show_controls === false ? 320 : 426))/50); }
+    getCardSize() { return Math.ceil((this._card?.offsetHeight || (this._controlsOpen ? (this.shadowRoot.querySelector(".appearance")?.open ? 990 : 690) : this._config?.show_controls === false ? 382 : 488))/50); }
     getGridOptions() { return {columns:12,min_columns:12}; }
     connectedCallback() {
       this._media.addEventListener?.("change", this._mediaChanged);
@@ -281,7 +501,7 @@
       if(this._config) { this._applyAppearance(true); this._update(true); }
     }
     disconnectedCallback() {
-      this._stopDebrisLoop();
+      this._frontHalt();
       this._motion?.cancel(); this._motion = null; this._resize?.disconnect();
       this._media.removeEventListener?.("change",this._mediaChanged);
       this._colorMedia.removeEventListener?.("change",this._colorMediaChanged);
@@ -292,14 +512,14 @@
       }
     }
     _render() {
-      this._stopDebrisLoop(); this._debris=[]; this._debrisPreviousPose=null;
+      const oldDust=this._front.dust.map(({element,...piece})=>piece);
+      this._frontHalt();
       this._motion?.cancel(); this._resize?.disconnect();
-      this._hasPlaced=false;
-      this.shadowRoot.innerHTML = `<style>${CSS}</style>
-        <ha-card data-mode="unknown" data-active="false">
+      this.shadowRoot.innerHTML = `<style>${CSS}${FRONT_CSS}</style>
+        <ha-card data-mode="unknown" data-active="false" data-view="front">
           <header><div class="heading"><h2 class="name"></h2><div class="state" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span class="state-text">Sem informação</span></div></div></header>
           <div class="scene" role="group" aria-label="Aspirador na base à direita">
-            <div class="floor" aria-hidden="true"></div><div class="tiles" aria-hidden="true"></div>
+            <div class="front-wall" aria-hidden="true"></div><div class="front-floor" aria-hidden="true"><div class="front-grain"></div><div class="front-light"></div></div>
             <div class="debris-layer" aria-hidden="true" hidden></div>
             <div class="stats">
               <div class="metric"><div class="metric-label">Bateria</div><div class="metric-value battery-value">—</div><div class="battery-track" role="progressbar" aria-label="Bateria" aria-valuemin="0" aria-valuemax="100"><div class="battery-fill"></div></div></div>
@@ -307,8 +527,8 @@
               <div class="metric"><div class="metric-label mop-label"></div><div class="metric-value mop-value">—</div></div>
             </div>
             <div class="top-battery" aria-hidden="true"><div class="metric-label">Bateria</div><strong class="battery-value">—</strong><div class="battery-track" role="progressbar" aria-label="Bateria" aria-valuemin="0" aria-valuemax="100"><div class="battery-fill"></div></div></div>
-            <div class="dock" aria-hidden="true"><div class="dock-shadow"></div><div class="tray"></div><div class="tower"><div class="dock-face"><span class="dock-led"></span></div><div class="dock-port"></div></div><div class="dock-label">BASE</div></div>
-            <div class="mover" aria-hidden="true"><div class="robot-shadow"></div><div class="halo"></div><div class="mop left"></div><div class="mop right"></div><div class="brush"><i></i><i></i><i></i></div><div class="shell"><div class="bumper"></div><div class="lidar"></div><div class="robot-led"></div></div></div>
+            <div class="dock" aria-hidden="true"><div class="front-dock-shadow"></div><div class="front-dock-body"></div><div class="front-dock-top"></div><div class="front-dock-face"></div><div class="front-dock-slot"></div><div class="front-dock-tray"></div></div>
+            <div class="mover" aria-hidden="true"><canvas class="front-canvas" aria-hidden="true"></canvas></div>
             <div class="activity" aria-hidden="true"><span>Limpeza <b class="clean-value">—</b></span><span>Mops <b class="mop-value">—</b></span></div>
           </div>
           <section class="controls-panel" id="vca-controls" aria-label="Controles do aspirador" hidden>
@@ -380,6 +600,11 @@
         this._applyAppearance(true);
       });
       this._applyAppearance(true);
+      this._frontModel=new FloorRobotModel.FloorRobot(this._robot.querySelector("canvas"));
+      this._frontDock=this._scene.querySelector(".dock");
+      this._front.layoutDirty=true;
+      this._front.dust=[];for(const piece of oldDust)this._addFrontDust(piece);
+      this._scenery.attach();this._drawFront();
       this._resize?.observe(this._scene);
     }
     _update(force = false) {
@@ -409,6 +634,13 @@
       this.shadowRoot.querySelectorAll(".mop-value").forEach(el => el.textContent = mop);
       this._refreshButtons();
       if(mode !== this._mode || force) { const previous = this._mode; this._mode = mode; if(this.isConnected) this._animate(mode,previous); }
+      this._scene.setAttribute("aria-label",this._mode === "cleaning" ? "Visão frontal do aspirador limpando o chão, com movimento em profundidade. Animação ilustrativa." : "Visão frontal do aspirador e da base, ao nível do chão.");
+      if(this._mode === "idle" && (this._front.pose.z<.75 || Math.abs(this._front.pose.x-DOCK.x)>.16)) {
+        this._card.dataset.active="true";
+        this.shadowRoot.querySelector(".stats").setAttribute("aria-hidden","true");
+        this.shadowRoot.querySelector(".top-battery").setAttribute("aria-hidden","false");
+        this.shadowRoot.querySelector(".activity").setAttribute("aria-hidden","false");
+      }
     }
     _loadAppearance() {
       this._appearanceDefaults=normalizeAppearance(this._config);
@@ -511,107 +743,184 @@
       message.hidden=!adjusted && !(theme.startsWith("ha:") && !named);
       message.textContent=theme.startsWith("ha:") && !named ? "Tema indisponível. O card está acompanhando a aparência atual do Home Assistant." : "Uma cor foi ajustada para manter os textos legíveis.";
     }
-    _geometry() {
-      const width = this._scene.clientWidth || this._width || 384; const height = this._scene.clientHeight || 248;
-      return {width,height,dock:{x:width-51,y:height-53,a:0},left:49,right:Math.max(121,width-119),top:105,bottom:height-100};
+    _frontGeometry() {return {width:this._scene.clientWidth || this._width || 414,height:310};}
+    _projectFront(p,g=this._frontGeometry()) {
+      const depth=(.48-clamp(p.z,0,1))*400;
+      const scale=800/(800-depth*Math.cos(20*Math.PI/180));
+      return {x:g.width/2+(p.x-.5)*Math.max(130,g.width-160)*scale,y:210+depth*Math.sin(20*Math.PI/180)*scale,scale};
     }
-    _syncDebris(mode,previous,geometry,reduced) {
-      this._stopDebrisLoop();
-      const enabled=this._config.dirt !== false && !reduced && typeof window.requestAnimationFrame === "function";
-      if(!enabled || !["cleaning","paused"].includes(mode)) {
-        this._debris=[];this._debrisLayer.replaceChildren();this._debrisLayer.hidden=true;return;
-      }
-      if(mode === "cleaning" && (!this._debris.length || !["cleaning","paused"].includes(previous))) {
-        this._debrisLayer.replaceChildren();this._debris=[];
-        for(const row of ["bottom","top"]) for(const fraction of [.15,.38,.62,.85]) {
-          const element=document.createElement("span");element.setAttribute("class","debris");element.dataset.collected="false";
-          element.innerHTML="<i></i><i></i><i></i>";this._debrisLayer.append(element);
-          this._debris.push({row,fraction,element,collected:false});
+    _drawFront() {
+      if(!this._robot || !this._frontDock) return;
+      const f=this._front,g=this._frontGeometry(),p=this._projectFront(f.pose,g);
+      this._robot.style.transform=`translate3d(${p.x-80*p.scale}px,${p.y-91*p.scale}px,0) scale(${p.scale})`;
+      this._frontModel?.draw(f.pose.yaw || 0,f.brushTime);
+      if(f.layoutWidth !== g.width || f.layoutDirty) {
+        const dock=this._projectFront({...DOCK,z:.94},g);
+        this._frontDock.style.transform=`translate3d(${dock.x-53*dock.scale}px,${dock.y-120*dock.scale}px,0) scale(${dock.scale})`;
+        for(const piece of f.dust) {
+          const q=this._projectFront(piece,g);
+          const size=q.scale*piece.size;
+          piece.element.style.transform=`translate3d(${q.x}px,${q.y}px,0) scale(${size},${size*.52}) rotate(${piece.angle}deg) translate(-9px,-8px)`;
         }
+        f.layoutWidth=g.width;f.layoutDirty=false;
       }
-      for(const piece of this._debris) {
-        piece.x=geometry.left+(geometry.right-geometry.left)*piece.fraction;piece.y=geometry[piece.row];
-        piece.element.style.transform=`translate(${piece.x-9}px,${piece.y-8}px)`;
-      }
-      this._debrisLayer.hidden=!this._debris.length;
+      this._debrisLayer.hidden=!f.dust.length;
     }
-    _collectDebris(pose) {
-      const start=this._debrisPreviousPose || pose;
-      const dx=pose.x-start.x,dy=pose.y-start.y,length=dx*dx+dy*dy;
-      for(const piece of this._debris) {
-        if(piece.collected) continue;
-        const progress=length ? clamp(((piece.x-start.x)*dx+(piece.y-start.y)*dy)/length,0,1) : 0;
-        if(Math.hypot(piece.x-start.x-dx*progress,piece.y-start.y-dy*progress)<=23) {
-          piece.collected=true;piece.element.dataset.collected="true";
+    _addFrontDust(piece) {
+      const element=document.createElement("span");element.setAttribute("class","debris");element.innerHTML="<i></i>".repeat(piece.grains || 3);
+      element.dataset.revealed=String((piece.age || 0)>=(piece.delay || 0));
+      element.dataset.collected=String(Boolean(piece.collected));this._debrisLayer.append(element);
+      this._front.dust.push({...piece,collected:Boolean(piece.collected),element});
+      this._front.layoutDirty=true;
+    }
+    _seedFrontDust() {
+      this._front.dust=[];this._debrisLayer.replaceChildren();
+      const lengths=CORNERS.map((p,i)=>metric(p,CORNERS[(i+1)%4]));
+      const perimeter=lengths.reduce((sum,length)=>sum+length,0);
+      for(let n=0;n<12;n++) {
+        let candidate;
+        for(let attempt=0;attempt<60;attempt++) {
+          let distance=this._frontRandom()*perimeter,segment=0;
+          while(segment<3 && distance>lengths[segment]){distance-=lengths[segment];segment++;}
+          const a=CORNERS[segment],b=CORNERS[(segment+1)%4],t=distance/lengths[segment];
+          candidate={x:lerp(a.x,b.x,t),z:lerp(a.z,b.z,t)};
+          if(a.z===b.z)candidate.z+=(this._frontRandom()-.5)*.14;
+          else candidate.x+=(this._frontRandom()-.5)*.10;
+          if(!this._front.dust.some(piece=>metric(piece,candidate)<.065))break;
         }
+        this._addFrontDust({...candidate,size:.65+this._frontRandom()*.65,angle:this._frontRandom()*360,grains:2+Math.floor(this._frontRandom()*2),delay:this._frontRandom()*1.6,age:0});
       }
-      this._debrisPreviousPose=pose;
     }
-    _startDebrisLoop() {
-      if(this._debrisFrame != null || typeof window.requestAnimationFrame !== "function") return;
-      const canRun=()=>this.isConnected && this._mode === "cleaning" && this._motion?.playState === "running" && !this._controlsOpen && !document.hidden && this._debris?.some(piece=>!piece.collected);
-      if(!canRun()) return;
-      const tick=()=>{
-        this._debrisFrame=null;if(!canRun()) return;
-        this._collectDebris(this._pose());
-        if(canRun()) this._debrisFrame=window.requestAnimationFrame(tick);
-      };
-      this._debrisFrame=window.requestAnimationFrame(tick);
+    _frontRandom() {return Math.random();}
+    _collectFrontDust(previous,pose) {
+      const dx=pose.x-previous.x,dz=(pose.z-previous.z)*.72,length=dx*dx+dz*dz;
+      for(const piece of this._front.dust) {
+        if(piece.collected || piece.age<piece.delay) continue;
+        const px=piece.x-previous.x,pz=(piece.z-previous.z)*.72;
+        const t=length ? clamp((px*dx+pz*dz)/length,0,1) : 0;
+        if(Math.hypot(px-dx*t,pz-dz*t)<.071) {piece.collected=true;piece.element.dataset.collected="true";}
+      }
     }
-    _stopDebrisLoop() {
-      if(this._debrisFrame != null) window.cancelAnimationFrame?.(this._debrisFrame);
-      this._debrisFrame=null;this._debrisPreviousPose=null;
+    _appendTurn(segments,cursor,yaw) {
+      const delta=angleDelta(cursor.yaw,yaw);
+      if(Math.abs(delta)<.05)return;
+      const to={...cursor,yaw:cursor.yaw+delta};
+      segments.push({type:"turn",from:{...cursor},to,duration:.3+Math.abs(delta)/100});
+      Object.assign(cursor,to);
     }
-    _pose() {
-      try {
-        const matrix = new DOMMatrixReadOnly(getComputedStyle(this._robot).transform);
-        return {x:matrix.m41+35,y:matrix.m42+35,a:Math.atan2(matrix.m12,matrix.m11)*180/Math.PI};
-      } catch { return this._lastPose || this._geometry().dock; }
+    _appendTravel(segments,cursor,to,duration,reverse=false) {
+      if(metric(cursor,to)<.0001)return;
+      const span=Math.max(130,this._frontGeometry().width-160);
+      const heading=Math.atan2((to.x-cursor.x)*span,-(to.z-cursor.z)*400)*180/Math.PI+(reverse?180:0);
+      this._appendTurn(segments,cursor,heading);
+      const target={...to,yaw:cursor.yaw};
+      segments.push({type:"move",from:{...cursor},to:target,duration,reverse});
+      Object.assign(cursor,target);
     }
-    _transform(p) { return `translate(${p.x-35}px,${p.y-35}px) rotate(${p.a || 0}deg)`; }
-    _stop(p) { this._motion?.cancel(); this._motion=null; this._lastPose=p; this._robot.style.transform=this._transform(p); }
+    _frontPlan(kind) {
+      const f=this._front,segments=[],cursor={...f.pose};
+      if(kind === "cleaning") {
+        const seconds=Math.max(24,this._config.cycle_seconds)-4.8;
+        for(const target of [CORNERS[1],CORNERS[2],CORNERS[3],CORNERS[0]]) {
+          const length=metric(cursor,target);
+          this._appendTravel(segments,cursor,target,seconds*length/(2*(.68+.46*.72)));
+        }
+      } else if(kind === "depart") {
+        this._appendTravel(segments,cursor,CORNERS[0],Math.max(1.2,metric(cursor,CORNERS[0])*15));
+        this._appendTurn(segments,cursor,-90);
+      } else {
+        const staging={x:DOCK.x,z:.73};
+        if(cursor.z>.73 && Math.abs(cursor.x-DOCK.x)<.03) {
+          this._appendTurn(segments,cursor,0);
+        } else {
+          this._appendTravel(segments,cursor,staging,Math.max(1.4,metric(cursor,staging)*7));
+          this._appendTurn(segments,cursor,0);
+        }
+        // Back into the station while the front keeps facing the room.
+        this._appendTravel(segments,cursor,DOCK,1.8,true);
+      }
+      f.task=segments.length?{kind,segments,index:0,segmentTime:0,time:0,distance:0}:null;
+    }
     _animate(mode,previous) {
-      if(!this._robot || !this.isConnected) return;
-      const g=this._geometry();
-      const pose = previous && this._hasPlaced ? this._pose() : g.dock;
-      this._hasPlaced=true;
-      this._stop(pose);
-      const reduced = this._media.matches || this._config.animation === false || typeof this._robot.animate !== "function";
+      if(!this._front || !this._robot || !this.isConnected) return;
+      const f=this._front,old=f.lastMode || previous;
+      const reduced=this._media.matches || this._config.animation === false || typeof window.requestAnimationFrame !== "function";
       this._card.dataset.motion=String(!reduced);
-      this._syncDebris(mode,previous,g,reduced);
-      if(this._controlsOpen) return;
+      if(reduced && mode === "docked") { f.pose={...DOCK};f.task=null; }
       if(mode === "cleaning") {
-        const destination={x:g.right,y:g.bottom,a:-90};
-        if(reduced) { this._stop(destination); return; }
-        this._motion=this._robot.animate([{transform:this._transform(pose)},{transform:this._transform(destination)}],{duration:1400,easing:"ease-in-out",fill:"forwards"});
-        this._motion.onfinish=()=> { if(this._mode === "cleaning" && this.isConnected) this._sweep(g); };
+        if(!["cleaning","paused"].includes(old) || !f.task || !["depart","cleaning"].includes(f.task.kind)) this._frontPlan("depart");
+        if(this._config.dirt !== false && !reduced && (!f.dust.length || !["cleaning","paused"].includes(old)))this._seedFrontDust();
       } else if(mode === "returning") {
-        const target={...g.dock,x:g.dock.x-10,a:90};
-        this._moveTo(pose,target,reduced ? 0 : 2300);
+        if(old !== "returning" || !f.task || f.task.kind !== "return") this._frontPlan("return");
       } else if(mode === "docked") {
-        this._moveTo(pose,g.dock,reduced || !previous ? 0 : 900);
-      } else if(mode === "idle") {
-        this._stop({x:g.dock.x-16,y:g.dock.y,a:0});
-      } else if(!previous) this._stop({x:g.right,y:g.bottom,a:0});
-      if(document.hidden) this._motion?.pause();
-      this._startDebrisLoop();
+        if(f.task?.kind === "return") { /* Finish the same approach if the state updates early. */ }
+        else if(old && old !== "docked" && metric(f.pose,DOCK)>.001)this._frontPlan("dock");
+        else {f.pose={...DOCK};f.task=null;}
+      }
+      if(!["cleaning","paused"].includes(mode) || this._config.dirt === false || reduced) {f.dust=[];this._debrisLayer.replaceChildren();}
+      f.lastMode=mode;
+      if(mode === "paused" || ["idle","error","unknown","unavailable"].includes(mode) || reduced || this._controlsOpen) {
+        this._motion?.pause();this._frontHalt();this._drawFront();return;
+      }
+      if(!f.task) {
+        this._motion?.cancel();this._drawFront();
+        if(mode === "returning")Promise.resolve().then(()=>{
+          if(this.isConnected && this._mode === "returning" && !f.task)this.dispatchEvent(new CustomEvent("vaccum-animation-docked"));
+        });
+        return;
+      }
+      if(!this._motion || this._motion.playState === "idle") {
+        const motion={playState:"paused",pause:()=>{motion.playState="paused";this._frontHalt();},play:()=>{
+          if(document.hidden || this._controlsOpen || this._media.matches || this._config.animation === false || !["cleaning","returning","docked"].includes(this._mode))return;
+          if(motion.playState !== "running")f.playTime=0;
+          motion.playState="running";this._frontSchedule();
+        },cancel:()=>{motion.playState="idle";this._frontHalt();}};
+        this._motion=motion;
+      }
+      this._drawFront();this._motion.play();
     }
-    _moveTo(start,end,ms) {
-      if(!ms) { this._stop(end); return; }
-      this._motion=this._robot.animate([{transform:this._transform(start)},{transform:this._transform(end)}],{duration:ms,easing:"ease-in-out",fill:"forwards"});
-      const animation=this._motion;
-      animation.onfinish=()=> { if(this._motion===animation) this._stop(end); };
+    _frontHalt() {
+      if(this._front.frame != null)window.cancelAnimationFrame?.(this._front.frame);
+      this._front.frame=null;this._front.lastTime=null;
+      if(this._card)this._card.dataset.frontRunning="false";
     }
-    _sweep(g) {
-      this._motion?.cancel();
-      const points=[
-        [g.right,g.bottom,-90,0],[g.left,g.bottom,-90,.32],[g.left,g.bottom,0,.37],
-        [g.left,g.top,0,.46],[g.left,g.top,90,.51],[g.right,g.top,90,.83],
-        [g.right,g.top,180,.88],[g.right,g.bottom,180,.97],[g.right,g.bottom,270,1]
-      ];
-      const frames=points.map(([x,y,a,offset])=>({transform:this._transform({x,y,a}),offset}));
-      this._motion=this._robot.animate(frames,{duration:this._config.cycle_seconds*1000,iterations:Infinity,easing:"linear"});
-      if(document.hidden) this._motion.pause();
+    _frontSchedule() {
+      const f=this._front;if(f.frame != null || !f.task)return;
+      this._card.dataset.frontRunning="true";
+      const tick=time=>{
+        f.frame=null;
+        if(!this.isConnected || this._motion?.playState !== "running" || this._controlsOpen || document.hidden || !["cleaning","returning","docked"].includes(this._mode)) {this._frontHalt();return;}
+        const dt=f.lastTime == null ? 0 : clamp((time-f.lastTime)/1000,0,.1);f.lastTime=time;
+        this._advanceFront(dt);this._drawFront();
+        if(f.task)f.frame=window.requestAnimationFrame(tick);
+        else {this._motion.playState="finished";this._frontHalt();}
+      };
+      f.frame=window.requestAnimationFrame(tick);
+    }
+    _advanceFront(dt) {
+      const f=this._front,task=f.task;if(!task)return;
+      f.playTime+=dt;const step=dt*ease(clamp(f.playTime/.45,0,1));
+      const previous={...f.pose},segment=task.segments[task.index];
+      if(!segment){f.task=null;return;}
+      task.segmentTime=Math.min(segment.duration,task.segmentTime+step);task.time+=step;
+      const t=task.segmentTime/segment.duration,progress=segment.type === "turn"?ease(t):travelProgress(t);
+      f.pose={x:lerp(segment.from.x,segment.to.x,progress),z:lerp(segment.from.z,segment.to.z,progress),yaw:lerp(segment.from.yaw,segment.to.yaw,progress)};
+      task.distance+=metric(previous,f.pose);
+      if(this._mode === "cleaning") {
+        f.brushTime+=step;
+        for(const piece of f.dust)if(piece.age<piece.delay) {
+          piece.age+=step;
+          if(piece.age>=piece.delay)piece.element.dataset.revealed="true";
+        }
+        this._collectFrontDust(previous,f.pose);
+      }
+      if(t>=1) {
+        task.index++;task.segmentTime=0;
+        if(task.index>=task.segments.length) {
+          if(task.kind === "depart" || task.kind === "cleaning")this._frontPlan("cleaning");
+          else {f.pose={...DOCK};f.task=null;this.dispatchEvent(new CustomEvent("vaccum-animation-docked"));}
+        }
+      }
     }
     _supports(service) {
       const features=number(this._hass?.states?.[this._config.entity]?.attributes?.supported_features) || 0;
@@ -654,7 +963,7 @@
     }
     _showControls(open) {
       this._controlsOpen=Boolean(open);
-      if(open) { this._width=this._scene.clientWidth || this._width; this._motion?.pause(); this._stopDebrisLoop(); }
+      if(open) { this._width=this._scene.clientWidth || this._width; this._motion?.pause(); this._frontHalt(); }
       this._scene.hidden=this._controlsOpen;
       this.shadowRoot.querySelector(".controls-panel").hidden=!this._controlsOpen;
       this.shadowRoot.querySelector(".main-actions").hidden=this._controlsOpen;
@@ -916,5 +1225,5 @@
   window.customCards=window.customCards || [];
   // Replace the old picker entry if an earlier bundle was already loaded.
   window.customCards=window.customCards.filter(card=>card.type !== LEGACY_TYPE);
-  if(!window.customCards.some(card=>card.type === TYPE)) window.customCards.push({type:TYPE,name:CARD_NAME,description:"Robô animado, temas e cores, controles personalizados e som de seleção.",preview:true,getEntitySuggestion:(hass,entityId)=>entityId.startsWith("vacuum.") ? {entity:entityId} : null});
+  if(!window.customCards.some(card=>card.type === TYPE)) window.customCards.push({type:TYPE,name:CARD_NAME,description:"Aspirador em visão frontal, cenário personalizável, temas, controles e som de seleção.",preview:true,getEntitySuggestion:(hass,entityId)=>entityId.startsWith("vacuum.") ? {entity:entityId} : null});
 })();

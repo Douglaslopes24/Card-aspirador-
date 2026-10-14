@@ -7,12 +7,13 @@
   const status=root.querySelector(".demo-state");
   const labels={docked:"Na base",cleaning:"Limpando",paused:"Pausado",returning:"Voltando à base",idle:"Parado",unavailable:"Indisponível",error:"Precisa de atenção"};
   let state="docked", battery=86, minutes=0, mopMinutes=28, returningTimer=null, startedAt=0, accumulated=0, fan="Padrão", notice="";
-  let config={entity:"vacuum.demonstracao",name:"Vaccum card-animations",battery_entity:"sensor.demo_bateria",cleaning_time_entity:"sensor.demo_tempo",mop_time_entity:"sensor.demo_mops",custom_buttons:[
+  let config={entity:"vacuum.demonstracao",name:"Vaccum card-animations",cycle_seconds:28,appearance_id:"vaccum-card-animations",battery_entity:"sensor.demo_bateria",cleaning_time_entity:"sensor.demo_tempo",mop_time_entity:"sensor.demo_mops",custom_buttons:[
     {name:"Limpar sala",icon:"room",entity:"script.demo_sala"},
     {name:"Limpar cozinha",icon:"kitchen",entity:"script.demo_cozinha"},
     {name:"Limpar com mops",icon:"mop",entity:"script.demo_mops"}
   ]};
   card.setConfig(config);
+  card.addEventListener("vaccum-animation-docked",()=>{if(state === "returning")setState("docked");});
   if(editor) {
     editor.setConfig(config);
     for(const child of editor.shadowRoot.children) child.hidden=child.tagName.toLowerCase() !== "style" && !child.matches(".button-settings");
@@ -61,7 +62,7 @@
     }
     state=next;
     publish();
-    if(next === "returning") returningTimer=setTimeout(()=>setState("docked"),2800);
+    if(next === "returning" && (card._media.matches || config.animation === false)) returningTimer=setTimeout(()=>setState("docked"),600);
   }
   const timer=setInterval(()=> {
     if(state === "cleaning") { battery=Math.max(15,battery-1); publish(); }

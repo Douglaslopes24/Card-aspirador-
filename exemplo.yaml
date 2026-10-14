@@ -21,7 +21,7 @@ name: Vaccum card-animations
 # dirt: true
 # sound: true
 # sound_volume: 0.18
-# cycle_seconds: 18
+# cycle_seconds: 28  # Entre 24 e 90 segundos.
 
 # Aparência inicial. Você também pode ajustá-la em Mais controles → Aparência.
 # theme: auto  # auto, light, dark ou "ha:Nome do seu tema"
@@ -29,6 +29,9 @@ name: Vaccum card-animations
 # secondary_text_color: "#aabfcf"
 # value_color: "#8de3d3"
 # appearance_id: aspirador_sala  # Opcional: separa escolhas de cards iguais.
+
+# Imagens do chão e da parede: Mais controles → Aparência → Cenário.
+# Escolha JPG, PNG ou WebP. São salvas apenas neste navegador, fora do YAML.
 
 # Personalização de todos os controles — também disponível no editor visual.
 # buttons:

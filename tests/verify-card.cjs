@@ -58,21 +58,6 @@ class Element {
     this._animation=animation;return animation;
   }
 }
-function poseFromTransform(t){const m=(t||'').match(/translate\(([-\d.]+)px,([-\d.]+)px\) rotate\(([-\d.]+)deg\)/);return m?{x:+m[1],y:+m[2],a:+m[3]}:{x:0,y:0,a:0};}
-function currentTransform(element){
-  const animation=element._animation;
-  if(!animation||animation.cancelled)return element.style.transform||'none';
-  const {frames,options}=animation;
-  let progress=animation.currentTime/options.duration;
-  if(options.iterations===Infinity)progress%=1;else progress=Math.min(1,progress);
-  let index=0;
-  while(index<frames.length-2&&progress>(frames[index+1].offset??(index+1)/(frames.length-1)))index++;
-  const p1=poseFromTransform(frames[index].transform),p2=poseFromTransform(frames[index+1].transform);
-  const start=frames[index].offset??index/(frames.length-1),end=frames[index+1].offset??(index+1)/(frames.length-1);
-  const f=Math.max(0,Math.min(1,(progress-start)/(end-start)));
-  return `translate(${p1.x+(p2.x-p1.x)*f}px,${p1.y+(p2.y-p1.y)*f}px) rotate(${p1.a+(p2.a-p1.a)*f}deg)`;
-}
-class Matrix {constructor(t){const p=poseFromTransform(t);this.m41=p.x;this.m42=p.y;this.m12=Math.sin(p.a*Math.PI/180);this.m11=Math.cos(p.a*Math.PI/180);}}
 const registry=new Map();
 const listeners={};
 const document={hidden:false,createElement(tag){const C=registry.get(tag),element=C?new C():new Element(tag);element.tagName=tag;return element;},addEventListener(n,fn){listeners[n]=fn;},removeEventListener(n){delete listeners[n];}};
@@ -82,17 +67,24 @@ const stored=new Map();
 const animationFrames=new Map();let nextFrame=0;
 const requestFrame=callback=>{const id=++nextFrame;animationFrames.set(id,callback);return id;};
 const cancelFrame=id=>animationFrames.delete(id);
-const advanceDebris=instance=>{const callback=animationFrames.get(instance._debrisFrame);if(callback){animationFrames.delete(instance._debrisFrame);callback();}};
+let frameTime=0;
+function advance(instance,milliseconds) {
+  for(let i=0;i<Math.ceil(milliseconds/16);i++) {
+    frameTime+=16;
+    const id=instance._front.frame,callback=animationFrames.get(id);
+    if(callback){animationFrames.delete(id);callback(frameTime);}
+  }
+}
 const storage={blocked:false,writes:0,getItem(key){if(this.blocked)throw new Error('Storage blocked');return stored.get(key)||null;},setItem(key,value){if(this.blocked)throw new Error('Storage blocked');this.writes++;stored.set(key,String(value));},removeItem(key){if(this.blocked)throw new Error('Storage blocked');stored.delete(key);}};
 function inheritedProperty(element,key){for(let node=element;node;node=node.parent){const value=node.style.getPropertyValue(key);if(value)return value;}return '';}
 function resolveCss(value,element,depth=0){
  if(depth>10)return '';
  return String(value||'').replace(/var\(\s*(--[\w-]+)\s*(?:,\s*([^()]+))?\)/g,(_,key,fallback)=>resolveCss(inheritedProperty(element,key)||fallback||'',element,depth+1));
 }
-function computedStyle(element){return {transform:currentTransform(element),color:resolveCss(element.style.color||'rgb(0, 0, 0)',element),getPropertyValue:key=>resolveCss(inheritedProperty(element,key),element)};}
+function computedStyle(element){return {transform:element.style.transform,color:resolveCss(element.style.color||'rgb(0, 0, 0)',element),getPropertyValue:key=>resolveCss(inheritedProperty(element,key),element)};}
 class HTMLElement extends Element{attachShadow(){this.shadowRoot=new Element('shadow');this.shadowRoot.parent=this;return this.shadowRoot;}}
 class ResizeObserver{constructor(fn){this.fn=fn;}observe(){}disconnect(){this.disconnected=true;}}
-const context=vm.createContext({HTMLElement,ResizeObserver,document,window:{matchMedia:query=>query.includes('color-scheme')?colorMedia:media,localStorage:storage,location:{pathname:'/lovelace/demo'},requestAnimationFrame:requestFrame,cancelAnimationFrame:cancelFrame},customElements:{define:(n,C)=>registry.set(n,C),get:n=>registry.get(n)},DOMMatrixReadOnly:Matrix,getComputedStyle:computedStyle,CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}},Intl,console});
+const context=vm.createContext({HTMLElement,ResizeObserver,document,window:{matchMedia:query=>query.includes('color-scheme')?colorMedia:media,localStorage:storage,location:{pathname:'/lovelace/demo'},requestAnimationFrame:requestFrame,cancelAnimationFrame:cancelFrame},customElements:{define:(n,C)=>registry.set(n,C),get:n=>registry.get(n)},getComputedStyle:computedStyle,CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}},Intl,console});
 vm.runInContext(readProject(productionFilename),context);
 const C=registry.get('vaccum-card-animations');
 check(!!C&&registry.has('vaccum-card-animations-editor'),'custom elements registered');
@@ -100,8 +92,8 @@ check(context.window.customCards[0].type==='vaccum-card-animations','card picker
 assert.throws(()=>new C().setConfig({entity:'sensor.invalid'}));checks++;
 const beforeAttach=new C();beforeAttach.isConnected=false;beforeAttach.setConfig({entity:'vacuum.before_attach'});
 beforeAttach.hass={states:{'vacuum.before_attach':{state:'cleaning',attributes:{supported_features:8192}}}};beforeAttach.isConnected=true;beforeAttach.connectedCallback();
-const initialPose=poseFromTransform(beforeAttach._motion.frames[0].transform),initialDock=beforeAttach._geometry().dock;
-check(initialPose.x+35===initialDock.x&&initialPose.y+35===initialDock.y,'hass assigned before connection still places robot at dock');beforeAttach.disconnectedCallback();
+check(beforeAttach._front.pose.x===.84&&beforeAttach._front.pose.z===.89&&beforeAttach._front.task.kind==='depart','first connection starts at the station');
+beforeAttach.disconnectedCallback();
 let commands=[];
 const card=new C();card.setConfig({entity:'vacuum.test'});card.connectedCallback();
 const makeHass=(mode='docked',attrs={},sensors={})=>({states:{'vacuum.test':{state:mode,attributes:{battery_level:86,cleaning_time:12,mop_time_left:28,supported_features:8192|4|16,...attrs}},...sensors},callService:async(...args)=>{commands.push(args);}});
@@ -113,32 +105,28 @@ check(query('ha-card').dataset.active==='false'&&query('.stats').getAttribute('a
 check(query('[data-action="primary"]').textContent==='Iniciar limpeza','initial control');
 check(query('[data-action="return"]').disabled,'docked return disabled');
 card.hass=makeHass('cleaning');
-check(card._motion&&card._motion.options.iterations!==Infinity,'departure runs once');
+check(card._front.task.kind==='depart','departure runs once');
 check(query('ha-card').dataset.active==='true'&&query('.top-battery').getAttribute('aria-hidden')==='false','battery moves to top');
 check(query('[data-action="primary"]').textContent==='Pausar','cleaning button updated immediately');
-card._motion.currentTime=1400;card._motion.onfinish();
-check(card._motion.options.iterations===Infinity,'sweep loop starts');
-const frames=card._motion.frames.map(frame=>poseFromTransform(frame.transform));
-check(frames[0].y===frames[1].y&&frames[0].x>frames[1].x,'foreground pass moves horizontally');
-check(frames[4].y===frames[5].y&&frames[4].x<frames[5].x,'upper pass returns horizontally');
-check(frames.length===9&&frames[1].x===frames[2].x&&frames[1].y===frames[2].y&&frames[2].a-frames[1].a===90,'original route turns at corners');
-card._motion.currentTime=card._motion.options.duration*.48;
-check(Math.abs(card._pose().a-36)<.001,'pose reads current rotation');
+advance(card,4000);
+check(card._front.task.kind==='cleaning','departure enters the cleaning route');
+const segments=card._front.task.segments;
+check(segments.some(s=>s.type==='move'&&s.from.z===s.to.z&&s.from.x>s.to.x),'first pass moves horizontally');
+check(segments.some(s=>s.type==='move'&&s.from.z===s.to.z&&s.from.x<s.to.x),'opposite pass returns horizontally');
+check(segments.some(s=>s.type==='turn'&&s.from.x===s.to.x&&s.from.z===s.to.z),'turns stay in place');
 const commandCount=commands.length;card._showControls(true);
 check(card._controlsOpen&&query('.scene').hidden&&!query('.controls-panel').hidden&&query('.more-controls').getAttribute('aria-expanded')==='true','more button opens controls');
 check(card._motion.playState==='paused'&&commands.length===commandCount,'opening controls pauses animation without commanding robot');
-const panelPose=card._pose();card._showControls(false);
+const panelPose=JSON.stringify(card._front.pose);card._showControls(false);
 check(!card._controlsOpen&&!query('.scene').hidden&&query('.controls-panel').hidden&&query('.more-controls').getAttribute('aria-expanded')==='false','back button restores robot view');
-const resumedStart=poseFromTransform(card._motion.frames[0].transform);
-check(Math.abs(resumedStart.a-panelPose.a)<.001&&Math.abs(resumedStart.x+35-panelPose.x)<.001&&Math.abs(resumedStart.y+35-panelPose.y)<.001,'closing controls preserves position and rotation');
-card._motion.currentTime=1400;card._motion.onfinish();
+check(JSON.stringify(card._front.pose)===panelPose,'closing controls preserves position and rotation');
 const same=card._motion;card.hass=makeHass('cleaning',{battery_level:85});
 check(card._motion===same&&query('.battery-value').textContent==='85%','sensor refresh does not restart animation');
-card._motion.currentTime=6000;const prior=card._pose();card.hass=makeHass('paused');const frozen=card._pose();
-check(card._motion===null&&Math.abs(prior.x-frozen.x)<0.01&&Math.abs(prior.y-frozen.y)<0.01,'pause freezes current position');
+advance(card,6000);const prior=JSON.stringify(card._front.pose);card.hass=makeHass('paused');
+check(card._front.frame===null&&JSON.stringify(card._front.pose)===prior,'pause freezes current position');
 check(query('[data-action="primary"]').textContent==='Continuar','pause control updated');
-card.hass=makeHass('returning');check(card._motion?.options.duration===2300,'return animation');
-card._motion.currentTime=2300;card._motion.onfinish();
+card.hass=makeHass('returning');check(card._front.task.kind==='return','return animation');
+advance(card,12000);
 check(card._mode==='returning'&&query('.state-text').textContent==='Voltando à base','return does not invent docked state');
 card.hass=makeHass('docked');
 check(query('[data-action="primary"]').textContent==='Iniciar limpeza','docked control no stale pause label');
@@ -149,12 +137,12 @@ check(query('.clean-value').textContent==='2:05 min'&&query('.mop-value').textCo
 card.hass=makeHass();
 check(query('.battery-value').textContent==='—'&&query('.clean-value').textContent==='—','missing configured sensors are not fabricated');
 card.hass=makeHass('unavailable');
-check(card._motion===null&&query('[data-action="primary"]').disabled&&query('[data-action="return"]').disabled,'unavailable stops motion and commands');
-card.hass=makeHass('error');check(card._motion===null&&query('[data-action="primary"]').disabled,'error stops motion');
+check(card._front.frame===null&&query('[data-action="primary"]').disabled&&query('[data-action="return"]').disabled,'unavailable stops motion and commands');
+card.hass=makeHass('error');check(card._front.frame===null&&query('[data-action="primary"]').disabled,'error stops motion');
 card.setConfig({entity:'vacuum.test',animation:false});card.hass=makeHass('cleaning');
-check(card._motion===null&&query('ha-card').dataset.motion==='false','disabled motion stops movement and motors');
+check(card._front.frame===null&&query('ha-card').dataset.motion==='false','disabled motion stops movement and motors');
 card.setConfig({entity:'vacuum.test'});media.matches=true;card._mediaChanged();card.hass=makeHass('cleaning');
-check(card._motion===null,'system reduced motion');media.matches=false;
+check(card._front.frame===null,'system reduced motion');media.matches=false;
 (async()=>{
  card.hass=makeHass('docked');await card._act('primary');
  check(commands.at(-1)[0]==='vacuum'&&commands.at(-1)[1]==='start'&&commands.at(-1)[2].entity_id==='vacuum.test','start targets chosen entity');
@@ -191,10 +179,6 @@ check(card._motion===null,'system reduced motion');media.matches=false;
  check(commands.length===before&&query('[data-action="primary"]').disabled,'unsupported command not sent');
  card.hass={...makeHass('docked'),callService:async()=>{throw new Error('offline');}};await card._act('primary');
  check(!query('.service-message').hidden&&query('.service-message').textContent.includes('offline')&&!card._pending,'service errors visible and pending cleared');
- for(const width of [296,344,414,720]){
-  card._scene.clientWidth=width;const g=card._geometry();
-  check(g.left-49>=0&&g.right+49<width&&g.top-49>=56&&g.bottom+49<=198,`motion geometry fits ${width}px scene`);
- }
  card.hass=makeHass('cleaning');card.disconnectedCallback();
  check(!card._motion&&card._resize.disconnected,'disconnect cleanup');
  const editor=C.getConfigElement();editor.setConfig({entity:'vacuum.test'});editor.hass=makeHass('docked',{}, {'sensor.custom':{state:'72',attributes:{friendly_name:'Bateria'}}});
@@ -387,51 +371,24 @@ check(card._motion===null,'system reduced motion');media.matches=false;
  const legacy=new Legacy();legacy.setConfig({type:'custom:aspirador-vivo-card',entity:'vacuum.test'});legacy.hass=makeHass();
  check(legacy.shadowRoot.querySelector('.name').textContent==='Vaccum card-animations'&&!legacy.shadowRoot.querySelector('.badge'),'legacy configuration shows new branding without the VIVO badge');
  const dusty=new C();dusty.setConfig({entity:'vacuum.test',sound:false});dusty.connectedCallback();dusty.hass=makeHass();
- check(dusty._debris.length===0&&dusty._debrisLayer.hidden,'docked robot starts on a clean floor');
+ check(dusty._front.dust.length===0&&dusty._debrisLayer.hidden,'docked floor is clean');
  const dirtCommands=commands.length;dusty.hass=makeHass('cleaning');
- check(dusty._debris.length===8&&!dusty._debrisLayer.hidden&&dusty._debrisFrame!=null,'starting cleaning places dirt along the route and schedules collection');
- check(dusty._debrisLayer.getAttribute('aria-hidden')==='true'&&commands.length===dirtCommands,'dirt is decorative and does not send commands');
- advanceDebris(dusty);check(dusty._debris.every(piece=>!piece.collected),'dirt remains until the robot reaches it');
- dusty._motion.currentTime=1400;dusty._motion.onfinish();
- for(let step=0;step<=30;step++){dusty._motion.currentTime=dusty._motion.options.duration*step/100;advanceDebris(dusty);}
- check(dusty._debris.filter(piece=>piece.row==='bottom').every(piece=>piece.collected&&piece.element.dataset.collected==='true'),'foreground pass picks up every dirt cluster on its path');
- check(dusty._debris.filter(piece=>piece.row==='top').every(piece=>!piece.collected),'dirt on the distant pass remains before the robot arrives');
- const dirtBeforeUpdate=dusty._debris,dirtAnimation=dusty._motion,dirtFrame=dusty._debrisFrame;
+ check(dusty._front.dust.length===12&&dusty._front.frame!=null,'cleaning places bounded random dirt');
+ check(dusty._debrisLayer.getAttribute('aria-hidden')==='true'&&commands.length===dirtCommands,'dirt is decorative and sends no commands');
+ advance(dusty,40000);const collected=dusty._front.dust;
+ check(collected.every(p=>p.collected),'one complete route picks up every dirt cluster');
  dusty.hass=makeHass('cleaning',{battery_level:71});
- check(dusty._debris===dirtBeforeUpdate&&dusty._motion===dirtAnimation&&dusty._debrisFrame===dirtFrame,'sensor refresh preserves dirt progress and animation');
- dusty.hass=makeHass('paused');
- check(dusty._debrisFrame===null&&!animationFrames.has(dirtFrame)&&dusty._debris.filter(piece=>piece.collected).length===4,'pause stops collection and retains unfinished dirt');
- dusty.hass=makeHass('cleaning');
- check(dusty._debris===dirtBeforeUpdate&&dusty._debris.filter(piece=>piece.collected).length===4&&dusty._debrisFrame!=null,'resume continues the same dirt collection');
- const panelDirtFrame=dusty._debrisFrame;dusty._showControls(true);
- check(dusty._debrisFrame===null&&!animationFrames.has(panelDirtFrame)&&dusty._debris===dirtBeforeUpdate,'opening controls stops hidden dirt work and preserves the floor');
- dusty._scene.clientWidth=296;dusty._animate('cleaning','cleaning');
- check(dusty._debris.every(piece=>piece.x-9>=0&&piece.x+9<=296)&&dusty._debris.filter(piece=>piece.collected).length===4,'resize keeps remaining dirt inside the scene without restoring collected pieces');
- dusty._showControls(false);dusty._motion.currentTime=1400;dusty._motion.onfinish();
- for(let step=0;step<=97;step++){dusty._motion.currentTime=dusty._motion.options.duration*step/100;advanceDebris(dusty);}
- check(dusty._debris.every(piece=>piece.collected)&&dusty._debrisFrame===null,'complete route collects all dirt and stops the collection frame loop');
- dusty.hass=makeHass('cleaning',{battery_level:70});
- check(dusty._debris.every(piece=>piece.collected)&&dusty._debris===dirtBeforeUpdate,'clean floor stays clean while the same cleaning session continues');
- dusty.hass=makeHass('docked');check(dusty._debris.length===0&&dusty._debrisLayer.hidden,'returning to dock clears the decorative dirt');
- dusty.hass=makeHass('cleaning');
- check(dusty._debris!==dirtBeforeUpdate&&dusty._debris.every(piece=>!piece.collected),'a new cleaning session creates new dirt');
- const hiddenDirtFrame=dusty._debrisFrame;document.hidden=true;dusty._visibility();
- check(dusty._motion.playState==='paused'&&dusty._debrisFrame===null&&!animationFrames.has(hiddenDirtFrame),'hidden document freezes movement and stops collection');
- document.hidden=false;dusty._visibility();check(dusty._motion.playState==='running'&&dusty._debrisFrame!=null,'visible document resumes dirt collection');
+ check(dusty._front.dust===collected&&collected.every(p=>p.collected),'a sensor refresh keeps the floor clean');
+ dusty.hass=makeHass('docked');check(dusty._front.dust.length===0&&dusty._debrisLayer.hidden,'docked state clears decorative dirt');
+ dusty.hass=makeHass('cleaning');check(dusty._front.dust!==collected&&dusty._front.dust.every(p=>!p.collected),'new cleaning creates new dirt');
  dusty.setConfig({entity:'vacuum.test',dirt:false});dusty.hass=makeHass('cleaning');
- check(dusty._motion&&dusty._debris.length===0&&dusty._debrisLayer.hidden,'dirt can be disabled while retaining the robot animation');
+ check(dusty._front.frame!=null&&dusty._front.dust.length===0&&dusty._debrisLayer.hidden,'dirt toggle retains robot motion');
  dusty.setConfig({entity:'vacuum.test',animation:false});dusty.hass=makeHass('cleaning');
- check(!dusty._motion&&dusty._debris.length===0&&dusty._debrisFrame===null,'disabled motion never leaves uncollectable dirt');
- dusty.setConfig({entity:'vacuum.test'});dusty.hass=makeHass('cleaning');media.matches=true;dusty._mediaChanged();
- check(!dusty._motion&&dusty._debrisLayer.hidden&&dusty._debrisFrame===null,'reduced motion suppresses decorative dirt work');media.matches=false;dusty._mediaChanged();
- dusty._motion.currentTime=1400;dusty._motion.onfinish();advanceDebris(dusty);
- dusty._motion.currentTime=dusty._motion.options.duration*.32;advanceDebris(dusty);
- check(dusty._debris.filter(piece=>piece.row==='bottom').every(piece=>piece.collected),'skipped animation frames still collect dirt along the traversed segment');
- const removedFrame=dusty._debrisFrame,lateTick=animationFrames.get(removedFrame);dusty.disconnectedCallback();lateTick?.();
- check(dusty._debrisFrame===null&&!animationFrames.has(removedFrame),'removing card cancels dirt frames and late callbacks cannot restart them');
+ check(dusty._front.frame===null&&dusty._front.dust.length===0,'disabled motion never leaves uncollectable dirt');
+ dusty.disconnectedCallback();
  delete context.window.requestAnimationFrame;
  const noFrame=new C();noFrame.setConfig({entity:'vacuum.test'});noFrame.hass=makeHass('cleaning');
- check(noFrame._motion&&noFrame._debrisLayer.hidden,'missing frame API leaves device controls and robot animation functional');
+ check(noFrame._front.frame===null&&noFrame._debrisLayer.hidden&&!noFrame.shadowRoot.querySelector('[data-action="primary"]').disabled,'missing frame API retains device controls without decorative motion');
  noFrame.disconnectedCallback();context.window.requestAnimationFrame=requestFrame;
  const personalized=new C();personalized.setConfig({entity:'vacuum.test',sound:false,buttons:{
   start:{name:'Começar agora',icon:'mop'},pause:{name:'Dar uma pausa',icon:'stop'},resume:{name:'Seguir limpando',icon:'room'},
@@ -499,14 +456,15 @@ check(card._motion===null,'system reduced motion');media.matches=false;
  await preview._runCustom(0);check(preview._mode==='cleaning'&&demoStatus.textContent==='Sala · simulação','preview room shortcut works');
  await preview._setFan('Turbo');check(preview.hass.states['vacuum.demonstracao'].attributes.fan_speed==='Turbo','preview power control works');
  await preview._act('locate');check(demoStatus.textContent==='Sinal sonoro simulado','preview locating gives feedback');
- await preview._act('return');timeout();preview._showControls(false);
+ await preview._act('return');preview._showControls(false);advance(preview,12000);await Promise.resolve();
  check(preview._mode==='docked'&&!preview._controlsOpen,'preview returns from controls to docked robot');
  await preview._act('primary');check(preview._mode==='cleaning','preview start interaction');
- check(preview._debris.length===8&&!preview._debrisLayer.hidden,'preview start displays dirt along the cleaning route');
+ check(preview._front.dust.length===12&&!preview._debrisLayer.hidden,'preview start displays dirt along the cleaning route');
+ advance(preview,1700);
  const initialBattery=Number(preview.hass.states['sensor.demo_bateria'].state);interval();
  check(Number(preview.hass.states['sensor.demo_bateria'].state)===initialBattery-1,'simulated battery updates');
  await preview._act('primary');check(preview._mode==='paused','preview pause interaction');
- await preview._act('return');check(preview._mode==='returning','preview return interaction');timeout();
+ await preview._act('return');check(preview._mode==='returning','preview return interaction');advance(preview,12000);await Promise.resolve();
  check(preview._mode==='docked'&&demoStatus.textContent==='Na base','preview finishes return');
  vm.runInContext(readProject(productionFilename),context);
  check(context.window.customCards.length===1,'reload does not duplicate registration');

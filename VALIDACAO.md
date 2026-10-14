@@ -1,15 +1,33 @@
-# Validação — versão 1.4.0
+# Validação — versão 1.5.0
 
-- Sintaxe JavaScript e exemplo YAML verificados.
-- `hacs.json` identifica `dist/Card-aspirador-.js`, compatível com a categoria **Dashboard/Plugin** do HACS. O arquivo é idêntico ao código do card; a pasta `dist` contém somente o JavaScript de produção.
-- A descoberta do arquivo de instalação e a geração do caminho `/hacsfiles/Card-aspirador-/Card-aspirador-.js` foram conferidas executando os métodos atuais correspondentes do HACS com os dados do repositório. Isso verifica o arquivo e o caminho; a instalação ainda depende da escolha da categoria correta no seu HACS.
-- 241 verificações funcionais passaram executando o código do card e da demonstração em um DOM simulado: posicionamento inicial antes da conexão, percurso e rotação originais, preservação da posição e do ângulo ao abrir e fechar os controles, ausência de comandos ao abrir a interface, tecla Esc, potência, limpeza pontual, localização, scripts personalizados, destino e dados das ações, alternativas para imagens de ícones, nomes tratados como texto, adição/edição/remoção de atalhos no editor, proteção contra perda de edições seguidas e funcionamento dos controles simulados.
-- O áudio foi verificado com uma simulação da API Web Audio: som nos controles principais, navegação, atalhos e potência; duração de 140 ms; volume inicial; desligamento e volume zero; limites de volume; silêncio nas atualizações dos sensores e botões desabilitados; retomada após a primeira interação; continuidade dos comandos se o áudio for bloqueado ou indisponível; liberação dos nós e encerramento do contexto ao remover o card. Esses testes não verificam a reprodução audível em um aparelho físico.
-- A aparência foi verificada nos modos claro, escuro e automático, com temas nomeados e suas variantes, referências entre variáveis CSS, fundo semitransparente, tema removido, troca do modo do Home Assistant e preferência do sistema. Um cálculo independente confirmou contraste de pelo menos 4,5:1 dos textos, rótulos, valores e erros contra o fundo e o piso nas paletas testadas, inclusive fundos intermediários e cores inicialmente iguais ao fundo. Também foi conferido o contraste do texto do botão principal.
-- As escolhas de aparência foram verificadas durante a limpeza, sem envio de ações nem reinício da animação: prévia ao escolher cores, salvamento na confirmação, recuperação em outra instância do card, separação por identificação, prioridade de novos padrões do YAML, restauração, conteúdo inválido e bloqueio do armazenamento. A seleção de tema, a confirmação de cor e a restauração reproduzem o som; a prévia contínua da cor permanece silenciosa.
-- O nome **Vaccum card-animations** foi conferido no HACS, na seleção de cartões, no nome padrão e no editor. O novo tipo é `custom:vaccum-card-animations`; o tipo anterior é aceito como alias para as configurações já instaladas. O cabeçalho não contém o selo anterior. O arquivo principal e a demonstração usam o novo nome.
-- A coleta de sujeiras foi verificada com a posição calculada da animação real do card: surgimento ao começar a limpeza, coleta somente ao passar pelos trechos correspondentes, preservação nas atualizações dos sensores, pausa e retomada, abertura dos controles, redimensionamento, quadros pulados, nova sessão e piso limpo após a coleta. O trabalho de coleta para quando todas as sujeiras são recolhidas, quando a página fica oculta ou quando o card é removido. Movimento reduzido, animação desligada, opção de sujeiras desligada e API de quadros indisponível também foram verificados.
-- Os nomes, ícones e imagens de todos os controles foram verificados nos dois locais de exibição e ao alternar entre iniciar, pausar e continuar. As ações do aspirador foram preservadas. O editor salva edições sucessivas sem perder outros botões ou scripts, aceita ícones `mdi:`, restaura apenas o controle escolhido e permite desligar a sujeira. Nomes continuam tratados como texto e imagens com protocolos inseguros são rejeitadas. A demonstração usa o editor de produção e aplica as alterações ao card.
-- A geometria do percurso foi conferida para cenas de 296, 344, 414 e 720 px de largura.
-- Não há navegador de teste disponível neste ambiente. As verificações acima não substituem a inspeção visual e sonora em um navegador.
-- O card não foi instalado nem testado em sua instância do Home Assistant ou no seu aparelho físico. A conexão real exige a entidade `vacuum.*` e os sensores disponíveis na integração do aspirador.
+Validação realizada em 14 de outubro de 2026, sobre o mesmo arquivo distribuído pelo HACS.
+
+- `npm run build`, `npm test` e `npm run check` passaram. O arquivo `dist/Card-aspirador-.js` é idêntico a `vaccum-card-animations.js`, e `dist` contém somente o JavaScript de produção, sem dependências externas.
+- A descoberta do arquivo e a geração do recurso foram verificadas executando os métodos correspondentes do código atual do HACS com o manifesto e os dados deste repositório. Resultado: `dist/Card-aspirador-.js` e `/hacsfiles/vacuum-card-home-assistant/Card-aspirador-.js`. A categoria é **Dashboard/Plugin**.
+- 223 verificações funcionais passaram em um DOM simulado: sensores, unidades, estados, capacidades do aspirador, destinos e dados das ações, controles personalizados, editor, ícones, temas, contraste, preferências locais, áudio e compatibilidade com configurações anteriores.
+- 39 verificações de movimento passaram: câmera frontal, partida da base, curvas sem deslocamento lateral, orientação coerente com a direção, aceleração, profundidade, pausa e retomada, retorno, redimensionamento, mops finos no plano do chão, movimento reduzido e limpeza dos quadros ao remover o card. A volta a uma aba não retoma um robô pausado. O percurso permanece dentro de cenas de 296, 344, 444 e 720 px.
+- A coleta foi verificada em um percurso completo e a colocação aleatória foi conferida em 80 distribuições. Todos os 12 grupos permanecem ao alcance da trajetória. Atualizações de sensores, troca de tema e edição de botões preservam o progresso. Uma nova sessão cria outra distribuição.
+- `npm run test:browser` passou em Chromium: cliques reais em iniciar, pausar, continuar, controles e retorno; seleção de tema; posição final na base; preferência de movimento reduzido; ausência de erros JavaScript; largura de tela de 320 px sem rolagem horizontal.
+- O teste de cenário no navegador selecionou arquivos de chão e parede separadamente, confirmou redução de 1280 × 720 para 1024 × 576, persistência ao recarregar, manutenção das imagens ao trocar o tema e editar botões, restauração individual e total, rejeição de imagem inválida sem perda da anterior e aviso quando o armazenamento está bloqueado ou cheio.
+- Capturas da versão de produção foram inspecionadas com cenário personalizado, tema escuro, tela de 320 px e robô em movimento. Os indicadores continuam legíveis e separados do robô.
+- O som foi verificado com uma simulação de Web Audio: botões, atalhos, navegação, potência, volume, mudo, bloqueio de áudio e encerramento do contexto. A reprodução audível em um aparelho físico não faz parte dessa validação.
+
+Os testes de navegador usam entidades simuladas no `demo.html`. A versão não foi instalada na instância particular do Home Assistant nem conectada a um aspirador físico durante esta validação. Os comandos reais dependem das capacidades expostas pela integração do aparelho.
+
+## Reproduzir
+
+```sh
+npm run build
+npm test
+npm run check
+```
+
+Testes opcionais em navegador:
+
+```sh
+npm install --no-save playwright
+npx playwright install chromium
+npm run test:browser
+```
+
+Para usar um Chromium já instalado, defina `CHROMIUM_EXECUTABLE_PATH`. Argumentos adicionais podem ser fornecidos como uma lista JSON em `CHROMIUM_ARGS`. As capturas são gravadas em uma pasta temporária ou em `BROWSER_TEST_OUTPUT`, se definido.

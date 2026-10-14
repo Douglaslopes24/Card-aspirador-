@@ -1,11 +1,12 @@
 {
   "name": "vaccum-card-animations",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
-  "description": "Card animado para Home Assistant com controles personalizados e som de seleção.",
+  "description": "Card frontal para Home Assistant com cenário personalizável, sujeira aleatória e controles com som.",
   "scripts": {
     "build": "node scripts/build.cjs",
-    "test": "node scripts/build.cjs --check && node tests/verify-card.cjs dist/Card-aspirador-.js",
-    "check": "node --check dist/Card-aspirador-.js && node --check demo-controller.js && node --check scripts/build.cjs"
+    "test": "node scripts/build.cjs --check && node tests/verify-card.cjs dist/Card-aspirador-.js && node tests/verify-motion.cjs dist/Card-aspirador-.js",
+    "check": "node --check dist/Card-aspirador-.js && node --check demo-controller.js && node --check scripts/build.cjs",
+    "test:browser": "node tests/browser-card.cjs && node tests/browser-scenery.cjs"
   }
 }

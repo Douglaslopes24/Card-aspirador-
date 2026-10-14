@@ -1,8 +1,8 @@
 # Vaccum card-animations
 
-Card personalizado e animado para Home Assistant. Na base, o aspirador fica à direita; bateria, tempo de limpeza e tempo dos mops aparecem à esquerda. O robô mantém a aparência e a animação originais, visto de cima, com dois mops e a escova lateral girando. Ao iniciar a limpeza, ele sai da base, percorre o card de um lado para o outro e muda de direção nas curvas. A bateria aparece no topo durante a limpeza.
+Card personalizado e animado para Home Assistant. Na base, o aspirador fica à direita; bateria, tempo de limpeza e tempo dos mops aparecem à esquerda. O robô aparece de frente, em uma perspectiva baixa, com volume, para-choque, sensores e mops finos apoiados no chão. Ao iniciar a limpeza, ele sai da base, anda na horizontal e em profundidade, desacelera antes das curvas e gira no próprio eixo antes de seguir. A bateria aparece no topo durante a limpeza.
 
-Pequenas sujeiras aparecem nos trechos do percurso ao começar a limpeza e desaparecem quando o robô passa por elas. Pausar ou abrir os controles mantém o progresso da coleta. Depois de recolhidas, o piso continua limpo até a próxima sessão. A opção **Mostrar sujeiras no percurso**, no editor, permite desligar esse efeito.
+Doze grupos de sujeira aparecem gradualmente em posições aleatórias ao longo do percurso, com tamanhos e orientações variados, e desaparecem quando o robô passa por eles. Cada nova limpeza cria uma distribuição diferente, sempre ao alcance do robô. Pausar ou abrir os controles mantém o progresso da coleta. Depois de recolhidas, o piso continua limpo até a próxima sessão. A opção **Mostrar sujeiras no percurso**, no editor, permite desligar esse efeito.
 
 O botão **Mais controles**, na parte de baixo, abre uma interface com ícones próprios para iniciar/pausar, voltar à base, parar, fazer limpeza pontual e encontrar o robô. A potência usa os modos reais publicados pelo aparelho. Você também pode criar atalhos para cômodos e mops com nomes e ícones personalizados.
 
@@ -10,28 +10,34 @@ Os botões reproduzem um som curto de seleção no celular, tablet ou navegador 
 
 Em **Mais controles → Aparência**, escolha um tema e as cores dos textos principais, dos rótulos e dos valores de bateria e tempos. As escolhas ficam salvas nesse navegador ou dispositivo. O card corrige cores com pouco contraste para manter as informações legíveis.
 
-Pausa mantém o aspirador na posição da animação. Retorno mostra o robô se aproximando da base; o estado **Na base** só aparece quando o Home Assistant informa `docked`. O estado `idle` aparece como **Parado**, próximo à base. Erro e indisponibilidade interrompem o movimento.
+Pausa mantém o aspirador na posição da animação. Retorno mostra o robô se aproximando da base; o estado **Na base** só aparece quando o Home Assistant informa `docked`. O estado `idle` aparece como **Parado**, mantendo a posição atual da animação. Erro e indisponibilidade interrompem o movimento.
 
 ## Instalação pelo HACS
 
 1. Abra **HACS → menu ⋮ → Repositórios personalizados**.
-2. Em **Repository**, cole `https://github.com/Douglaslopes24/Card-aspirador-`.
+2. Em **Repository**, cole `https://github.com/Douglaslopes24/vacuum-card-home-assistant`.
 3. Em **Type**, escolha **Dashboard**. Em versões antigas, a categoria pode aparecer como **Plugin** ou **Frontend**. O Vaccum card-animations é um cartão de painel; selecionar **Integration** causa a mensagem de estrutura incompatível.
 4. Clique em **Add**, procure **Vaccum card-animations** no HACS e baixe o card. Se aparecer uma escolha de versão, selecione **main**.
 5. Recarregue o navegador ou aplicativo. No seu painel, selecione **Editar painel → Adicionar cartão → Vaccum card-animations** e escolha a entidade `vacuum.*` do robô. Se preferir, use o cartão **Manual** com o YAML mínimo abaixo.
 
-O HACS usa `hacs.json` para identificar o arquivo `dist/Card-aspirador-.js`. Esse arquivo inclui o card, o editor, as animações, os ícones e os sons. A instalação pelo HACS usa o recurso:
+O HACS usa `hacs.json` para identificar o arquivo `dist/Card-aspirador-.js`. O nome do arquivo foi preservado e está declarado explicitamente no manifesto, mesmo após a mudança do nome do repositório. Esse arquivo inclui o card, o editor, as animações, os ícones e os sons. A instalação pelo HACS usa o recurso:
 
 ```text
-/hacsfiles/Card-aspirador-/Card-aspirador-.js
+/hacsfiles/vacuum-card-home-assistant/Card-aspirador-.js
 ```
 
 Confira **Configurações → Painéis → Recursos**. Se o HACS não tiver criado a entrada automaticamente, adicione esse caminho como **Módulo JavaScript**. Em painéis gerenciados por YAML, configure o recurso no próprio painel. Se você já instalou manualmente, depois de baixar pelo HACS deixe apenas o recurso do HACS e remova a entrada manual anterior dessa lista. Recarregue o navegador/aplicativo após alterar os recursos.
 
+### Atualizar uma instalação existente
+
+No HACS, abra **Vaccum card-animations**, procure atualizações ou use **Baixar novamente**, selecionando **main**. Este repositório distribui a versão pelo branch principal; o HACS pode exibir o identificador do commit em vez de `1.5.0`.
+
+Como o repositório agora se chama `vacuum-card-home-assistant`, confira o recurso após baixar: `/hacsfiles/vacuum-card-home-assistant/Card-aspirador-.js`. Se existir uma entrada antiga em `/hacsfiles/Card-aspirador-/`, substitua-a pelo caminho atual. Mantenha uma única entrada deste card para evitar carregar a versão antiga primeiro. Preserve os IDs de entidades e as personalizações do seu YAML e recarregue completamente o navegador ou aplicativo.
+
 ## Instalação manual
 
 1. Copie `vaccum-card-animations.js` para `/config/www/vaccum-card-animations.js` no Home Assistant. Crie a pasta `www` se necessário.
-2. Em **Configurações → Painéis → Recursos**, adicione `/local/vaccum-card-animations.js?v=1.4.0`, tipo **Módulo JavaScript**. A opção Recursos pode exigir o modo avançado do seu perfil. Se seu painel é gerenciado por YAML, adicione o recurso na configuração desse painel.
+2. Em **Configurações → Painéis → Recursos**, adicione `/local/vaccum-card-animations.js?v=1.5.0`, tipo **Módulo JavaScript**. A opção Recursos pode exigir o modo avançado do seu perfil. Se seu painel é gerenciado por YAML, adicione o recurso na configuração desse painel.
 3. Recarregue o navegador ou aplicativo. Adicione **Vaccum card-animations** na seleção de cartões. Se preferir, use **Manual** e cole o conteúdo de `exemplo.yaml`.
 4. Escolha a entidade `vacuum.*` e, se disponíveis, os sensores da bateria, do tempo de limpeza e dos mops. O card já inclui editor visual.
 
@@ -74,7 +80,7 @@ mop_label: "Mops · tempo restante"
 | `dirt` | Mostrar sujeiras recolhidas no percurso animado | true |
 | `sound` | Som curto de seleção nos botões e na potência | true |
 | `sound_volume` | Volume do som, de 0 (mudo) a 1 | 0.18 |
-| `cycle_seconds` | Duração de cada percurso, entre 8 e 90 segundos | 18 |
+| `cycle_seconds` | Duração aproximada de cada percurso, entre 24 e 90 segundos | 28 |
 | `custom_buttons` | Lista de até 12 atalhos personalizados | Lista vazia |
 | `buttons` | Nomes, ícones e imagens dos controles principais e de navegação | Padrões do card |
 | `icons` | Substituições dos ícones dos controles principais | Ícones próprios do card |
@@ -88,13 +94,13 @@ Um sensor configurado tem prioridade sobre o atributo. O card usa a unidade info
 
 A movimentação é ilustrativa, baseada no estado do aspirador, e não representa seu mapa ou a posição real na casa. A animação não dispara comandos. Os controles só enviam comandos quando clicados, respeitando as capacidades publicadas pelo aspirador. Iniciar, Pausar e Voltar à base dependem da integração existente do seu aparelho.
 
-O card acompanha as cores do tema do Home Assistant, suporta telas de 320 px ou mais e respeita a preferência do sistema por movimento reduzido. O pacote é independente e desenha o robô e os ícones localmente. Imagens personalizadas são carregadas do caminho que você configurar.
+O card acompanha as cores do tema do Home Assistant, suporta telas de 320 px ou mais e respeita a preferência do sistema por movimento reduzido. O pacote é independente e desenha o robô e os ícones localmente. As imagens dos ícones são carregadas do caminho que você configurar; as imagens do cenário são escolhidas diretamente no card.
 
 O áudio é gerado localmente, sem arquivos de som nem downloads. Ele só começa após uma interação com um controle habilitado. Atualizações dos sensores e a animação permanecem silenciosas. Se o navegador bloquear o áudio ou não oferecer Web Audio, o comando do botão continua funcionando. Volume zero também desliga o som.
 
 ## Tema e cores dentro do card
 
-Abra **Mais controles → Aparência**. Em **Tema do card**, escolha **Automático · Home Assistant**, **Claro**, **Escuro** ou um dos temas disponíveis no seu Home Assistant. Depois escolha as cores de **Textos principais**, **Rótulos e estado** e **Bateria e tempos**. O ajuste vale para este card. **Restaurar aparência** volta às opções configuradas no YAML, ou aos padrões quando não há opções configuradas.
+Abra **Mais controles → Aparência**. Em **Tema do card**, escolha **Automático · Home Assistant**, **Claro**, **Escuro** ou um dos temas disponíveis no seu Home Assistant. Depois escolha as cores de **Textos principais**, **Rótulos e estado** e **Bateria e tempos**. O ajuste vale para este card. **Restaurar aparência** volta às opções configuradas no YAML, ou aos padrões quando não há opções configuradas, e restaura o chão e a parede originais.
 
 O fundo do card, o piso e os botões usam a mesma paleta. Textos e valores recebem uma correção de contraste quando necessário; a cor aplicada aparece no seletor e um aviso informa o ajuste. Os botões desabilitados continuam legíveis. Trocar a aparência não envia comandos nem reinicia a animação. A escolha do tema, a confirmação de uma cor e a restauração reproduzem o mesmo som de seleção dos outros controles.
 
@@ -114,7 +120,15 @@ value_color: "#8de3d3"
 
 Para um tema existente, use `theme: "ha:Nome do seu tema"`. A opção automática acompanha o tema e o modo claro/escuro do Home Assistant; se o modo não estiver disponível, usa a preferência do sistema. Um tema removido volta temporariamente à aparência automática e mostra um aviso.
 
-O projeto, a interface, o editor e o arquivo principal usam **Vaccum card-animations**. O tipo para novas configurações é `custom:vaccum-card-animations`. Os tipos antigos `custom:aspirador-vivo-card` e seu editor são aceitos apenas como aliases de compatibilidade, para os painéis já configurados continuarem funcionando. O caminho do recurso do HACS é o mesmo. Na instalação manual, substitua o recurso anterior por `/local/vaccum-card-animations.js?v=1.4.0`. Um `name` personalizado, como **Bob o Aspirador**, continua sendo usado.
+O projeto, a interface, o editor e o arquivo principal usam **Vaccum card-animations**. O tipo para novas configurações é `custom:vaccum-card-animations`. Os tipos antigos `custom:aspirador-vivo-card` e seu editor são aceitos apenas como aliases de compatibilidade, para os painéis já configurados continuarem funcionando. O arquivo do HACS continua se chamando `Card-aspirador-.js`; a pasta do recurso acompanha o nome atual do repositório, conforme as instruções de atualização acima. Na instalação manual, substitua o recurso anterior por `/local/vaccum-card-animations.js?v=1.5.0`. Um `name` personalizado, como **Bob o Aspirador**, continua sendo usado.
+
+## Trocar o chão e a parede
+
+Abra **Mais controles → Aparência → Cenário**. Use **Escolher imagem** em **Imagem do chão** ou **Imagem da parede**. As duas superfícies são independentes. A prévia mostra o arquivo escolhido; **Restaurar** remove apenas a imagem daquela superfície. **Restaurar aparência** remove as duas imagens e restaura o tema e as cores.
+
+São aceitos JPG, PNG e WebP de até 12 MB e 48 megapixels. O card redimensiona a imagem para até 1024 pixels no maior lado antes de salvá-la. As imagens preenchem a superfície e podem ser recortadas nas bordas. Elas ficam no armazenamento local desse navegador, separadas por card, sem envio ao GitHub ou ao Home Assistant. Outro dispositivo precisa escolher suas próprias imagens. Limpar os dados do navegador também remove essas escolhas.
+
+Use `appearance_id` para manter uma identificação estável mesmo se mudar o nome do card. As fotos permanecem ao trocar o tema ou editar os botões. Os indicadores recebem um fundo sólido para continuarem legíveis sobre imagens claras ou escuras. Arquivos inválidos preservam a imagem anterior; se não houver espaço para salvar, o card avisa e mantém a imagem apenas durante a sessão.
 
 ## Seus botões e ícones
 
@@ -207,13 +221,15 @@ Os controles nativos respeitam os recursos publicados pela entidade `vacuum`. Po
 
 ## Demonstração
 
-Abra `demo.html` no navegador. Os estados, comandos, bateria e tempos são simulados localmente e não controlam nenhum aparelho. Use **Iniciar limpeza** para ver a animação original, a saída da base e a coleta das sujeiras; **Pausar** congela o aspirador e **Voltar à base** mostra o retorno. Use **Mais controles** para testar os ícones, a potência e os atalhos de sala, cozinha e mops. Em **Aparência**, teste os temas, as cores e a restauração. Em **Personalizar botões**, abaixo do card, teste os nomes e ícones usando o mesmo editor do Home Assistant. Os botões têm som de seleção. Os três scripts e os temas Oceano e Ametista são exemplos simulados na demonstração.
+Abra `demo.html` no navegador. Os estados, comandos, bateria e tempos são simulados localmente e não controlam nenhum aparelho. Use **Iniciar limpeza** para ver a animação frontal, a saída da base e a coleta das sujeiras aleatórias; **Pausar** congela o aspirador e **Voltar à base** mostra o retorno. Use **Mais controles** para testar os ícones, a potência e os atalhos de sala, cozinha e mops. Em **Aparência**, teste os temas, as cores e as imagens do chão e da parede. Em **Personalizar botões**, abaixo do card, teste os nomes e ícones usando o mesmo editor do Home Assistant. Os botões têm som de seleção. Os três scripts e os temas Oceano e Ametista são exemplos simulados na demonstração.
 
-Para executar a validação funcional do arquivo instalado pelo HACS, use `npm test`. O teste não depende de pacotes externos. Ao modificar `vaccum-card-animations.js`, execute `npm run build` para atualizar `dist/Card-aspirador-.js`, seguido de `npm test` e `npm run check`. A validação também confere que o arquivo do HACS é idêntico ao código do card.
+Para executar a validação funcional do arquivo instalado pelo HACS, use `npm test`. O teste não depende de pacotes externos. Ao modificar `vaccum-card-animations.js`, execute `npm run build` para atualizar `dist/Card-aspirador-.js`, seguido de `npm test` e `npm run check`. A validação também confere que o arquivo do HACS é idêntico ao código do card. Os testes geométricos verificam curvas, suavidade, mops no plano do piso, pausa, retorno, limites da cena e coleta em 80 distribuições aleatórias. Valores antigos de `cycle_seconds` abaixo de 24 são ajustados para 24 para preservar a suavidade.
+
+Para testar o navegador, instale Playwright com `npm install --no-save playwright`, execute `npx playwright install chromium` e depois `npm run test:browser`. Esses testes usam o `demo.html` e o arquivo de produção de `dist`, com dados locais simulados.
 
 ## Se o cartão não aparecer
 
-Confira o caminho do arquivo e o recurso do tipo **Módulo JavaScript**. Pelo HACS, abra `/hacsfiles/Card-aspirador-/Card-aspirador-.js` no seu Home Assistant; pela instalação manual, abra `/local/vaccum-card-animations.js?v=1.4.0`. Deve aparecer o código, sem erro 404. Depois recarregue o aplicativo e adicione o tipo exato `custom:vaccum-card-animations`. Ao atualizar uma instalação manual, substitua o arquivo, mude o recurso para `?v=1.4.0` e recarregue o navegador/aplicativo. Pelo HACS, use a opção de atualização ou baixe novamente o card.
+Confira o caminho do arquivo e o recurso do tipo **Módulo JavaScript**. Pelo HACS, abra `/hacsfiles/vacuum-card-home-assistant/Card-aspirador-.js` no seu Home Assistant; pela instalação manual, abra `/local/vaccum-card-animations.js?v=1.5.0`. Deve aparecer o código, sem erro 404. Depois recarregue o aplicativo e adicione o tipo exato `custom:vaccum-card-animations`. Ao atualizar uma instalação manual, substitua o arquivo, mude o recurso para `?v=1.5.0` e recarregue o navegador/aplicativo. Pelo HACS, use a opção de atualização ou baixe novamente o card.
 
 ## Referências
 
@@ -223,4 +239,4 @@ Confira o caminho do arquivo e o recurso do tipo **Módulo JavaScript**. Pelo HA
 - [Repositórios personalizados no HACS](https://www.hacs.dev/docs/faq/custom_repositories/)
 - [Cards de painel no HACS](https://www.hacs.dev/docs/publish/plugin/)
 
-Versão 1.4.0. Código: [Douglaslopes24/Card-aspirador-](https://github.com/Douglaslopes24/Card-aspirador-). A instalação na sua instância do Home Assistant é feita pelos passos acima.
+Versão 1.5.0. Código: [Douglaslopes24/vacuum-card-home-assistant](https://github.com/Douglaslopes24/vacuum-card-home-assistant). A instalação na sua instância do Home Assistant é feita pelos passos acima.
