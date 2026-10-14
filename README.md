@@ -30,14 +30,16 @@ Confira **Configurações → Painéis → Recursos**. Se o HACS não tiver cria
 
 ### Atualizar uma instalação existente
 
-No HACS, abra **Vaccum card-animations**, procure atualizações ou use **Baixar novamente**, selecionando **main**. Este repositório distribui a versão pelo branch principal; o HACS pode exibir o identificador do commit em vez de `1.5.0`.
+No HACS, abra **Vaccum card-animations**, procure atualizações ou use **Baixar novamente**, selecionando **main**. Este repositório distribui a versão pelo branch principal; o HACS pode exibir o identificador do commit em vez de `1.5.1`.
 
 Como o repositório agora se chama `vacuum-card-home-assistant`, confira o recurso após baixar: `/hacsfiles/vacuum-card-home-assistant/Card-aspirador-.js`. Se existir uma entrada antiga em `/hacsfiles/Card-aspirador-/`, substitua-a pelo caminho atual. Mantenha uma única entrada deste card para evitar carregar a versão antiga primeiro. Preserve os IDs de entidades e as personalizações do seu YAML e recarregue completamente o navegador ou aplicativo.
+
+**Se a versão antiga já tiver carregado:** o navegador não permite que a nova versão substitua o componente registrado na mesma página. A versão 1.5.1 detecta o conflito e oferece temporariamente o tipo `custom:vaccum-card-animations-v151` como **Vaccum card-animations (versão corrigida)** na seleção de cartões; o editor desse tipo também é atualizado. Você pode trocar o `type:` do seu cartão para esse tipo sem mudar a entidade ou as opções. A solução definitiva é remover o recurso antigo e manter apenas o caminho novo acima; depois reinicie o aplicativo ou atualize a página sem usar o cache. Após a limpeza, volte ao tipo original `custom:vaccum-card-animations`.
 
 ## Instalação manual
 
 1. Copie `vaccum-card-animations.js` para `/config/www/vaccum-card-animations.js` no Home Assistant. Crie a pasta `www` se necessário.
-2. Em **Configurações → Painéis → Recursos**, adicione `/local/vaccum-card-animations.js?v=1.5.0`, tipo **Módulo JavaScript**. A opção Recursos pode exigir o modo avançado do seu perfil. Se seu painel é gerenciado por YAML, adicione o recurso na configuração desse painel.
+2. Em **Configurações → Painéis → Recursos**, adicione `/local/vaccum-card-animations.js?v=1.5.1`, tipo **Módulo JavaScript**. A opção Recursos pode exigir o modo avançado do seu perfil. Se seu painel é gerenciado por YAML, adicione o recurso na configuração desse painel.
 3. Recarregue o navegador ou aplicativo. Adicione **Vaccum card-animations** na seleção de cartões. Se preferir, use **Manual** e cole o conteúdo de `exemplo.yaml`.
 4. Escolha a entidade `vacuum.*` e, se disponíveis, os sensores da bateria, do tempo de limpeza e dos mops. O card já inclui editor visual.
 
@@ -120,7 +122,7 @@ value_color: "#8de3d3"
 
 Para um tema existente, use `theme: "ha:Nome do seu tema"`. A opção automática acompanha o tema e o modo claro/escuro do Home Assistant; se o modo não estiver disponível, usa a preferência do sistema. Um tema removido volta temporariamente à aparência automática e mostra um aviso.
 
-O projeto, a interface, o editor e o arquivo principal usam **Vaccum card-animations**. O tipo para novas configurações é `custom:vaccum-card-animations`. Os tipos antigos `custom:aspirador-vivo-card` e seu editor são aceitos apenas como aliases de compatibilidade, para os painéis já configurados continuarem funcionando. O arquivo do HACS continua se chamando `Card-aspirador-.js`; a pasta do recurso acompanha o nome atual do repositório, conforme as instruções de atualização acima. Na instalação manual, substitua o recurso anterior por `/local/vaccum-card-animations.js?v=1.5.0`. Um `name` personalizado, como **Bob o Aspirador**, continua sendo usado.
+O projeto, a interface, o editor e o arquivo principal usam **Vaccum card-animations**. O tipo para novas configurações é `custom:vaccum-card-animations`. Os tipos antigos `custom:aspirador-vivo-card` e seu editor são aceitos apenas como aliases de compatibilidade, para os painéis já configurados continuarem funcionando. O arquivo do HACS continua se chamando `Card-aspirador-.js`; a pasta do recurso acompanha o nome atual do repositório, conforme as instruções de atualização acima. Na instalação manual, substitua o recurso anterior por `/local/vaccum-card-animations.js?v=1.5.1`. Um `name` personalizado, como **Bob o Aspirador**, continua sendo usado.
 
 ## Trocar o chão e a parede
 
@@ -229,7 +231,7 @@ Para testar o navegador, instale Playwright com `npm install --no-save playwrigh
 
 ## Se o cartão não aparecer
 
-Confira o caminho do arquivo e o recurso do tipo **Módulo JavaScript**. Pelo HACS, abra `/hacsfiles/vacuum-card-home-assistant/Card-aspirador-.js` no seu Home Assistant; pela instalação manual, abra `/local/vaccum-card-animations.js?v=1.5.0`. Deve aparecer o código, sem erro 404. Depois recarregue o aplicativo e adicione o tipo exato `custom:vaccum-card-animations`. Ao atualizar uma instalação manual, substitua o arquivo, mude o recurso para `?v=1.5.0` e recarregue o navegador/aplicativo. Pelo HACS, use a opção de atualização ou baixe novamente o card.
+Confira o caminho do arquivo e o recurso do tipo **Módulo JavaScript**. Pelo HACS, abra `/hacsfiles/vacuum-card-home-assistant/Card-aspirador-.js` no seu Home Assistant; pela instalação manual, abra `/local/vaccum-card-animations.js?v=1.5.1`. Deve aparecer o código, sem erro 404. Depois recarregue o aplicativo e adicione o tipo exato `custom:vaccum-card-animations`. Ao atualizar uma instalação manual, substitua o arquivo, mude o recurso para `?v=1.5.1` e recarregue o navegador/aplicativo. Pelo HACS, use a opção de atualização ou baixe novamente o card.
 
 ## Referências
 
@@ -239,4 +241,4 @@ Confira o caminho do arquivo e o recurso do tipo **Módulo JavaScript**. Pelo HA
 - [Repositórios personalizados no HACS](https://www.hacs.dev/docs/faq/custom_repositories/)
 - [Cards de painel no HACS](https://www.hacs.dev/docs/publish/plugin/)
 
-Versão 1.5.0. Código: [Douglaslopes24/vacuum-card-home-assistant](https://github.com/Douglaslopes24/vacuum-card-home-assistant). A instalação na sua instância do Home Assistant é feita pelos passos acima.
+Versão 1.5.1. Código: [Douglaslopes24/vacuum-card-home-assistant](https://github.com/Douglaslopes24/vacuum-card-home-assistant). A instalação na sua instância do Home Assistant é feita pelos passos acima.

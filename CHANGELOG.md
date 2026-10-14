@@ -1,5 +1,12 @@
 # Histórico de versões
 
+## 1.5.1 — 2026-10-14
+
+- Detecta colisão entre o JavaScript antigo e o novo na memória do navegador após renomeação do repositório.
+- Disponibiliza temporariamente o tipo `custom:vaccum-card-animations-v151` e seu editor atualizado quando o registro principal já pertence a uma versão antiga.
+- Evita alertas falsos ao recarregar o mesmo código e orienta a remoção do recurso antigo do HACS.
+- Adiciona testes de regressão do registro duplicado, preservando o tipo e as configurações anteriores.
+
 ## 1.5.0 — 2026-10-14
 
 - Substitui a vista de cima pela animação frontal aprovada, com deslocamento horizontal e em profundidade.

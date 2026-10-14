@@ -1,9 +1,11 @@
-/* Vaccum card-animations 1.5.0 — Home Assistant custom card, no external dependencies. */
+/* Vaccum card-animations 1.5.1 — Home Assistant custom card, no external dependencies. */
 (() => {
   "use strict";
   const TYPE = "vaccum-card-animations";
   // Compatibility aliases for dashboards configured before the rename.
   const LEGACY_TYPE = "aspirador-vivo-card";
+  const RECOVERY_TYPE = "vaccum-card-animations-v151";
+  const VERSION = "1.5.1";
   const LABELS = {docked:"Na base", cleaning:"Limpando", returning:"Voltando à base", paused:"Pausado", idle:"Parado", error:"Precisa de atenção", unavailable:"Indisponível", unknown:"Sem informação"};
   const FEATURES = {start:8192, pause:4, stop:8, return_to_base:16, clean_spot:1024, locate:512, set_fan_speed:32, send_command:256};
   // Original icons for the custom control interface, with no external icon font.
@@ -1218,12 +1220,29 @@ const Scenery=(() => {
       }
     }
   }
-  if(!customElements.get(TYPE)) customElements.define(TYPE,VaccumCardAnimations);
+  // When an old resource registered the type first, the Custom Elements registry
+  // cannot replace that constructor. Keep compatibility and expose a fresh type.
+  VaccumCardAnimations.VCA_VERSION=VERSION;
+  const existingCard=customElements.get(TYPE);
+  const versionConflict=Boolean(existingCard && existingCard.VCA_VERSION !== VERSION);
+  if(!existingCard) customElements.define(TYPE,VaccumCardAnimations);
   if(!customElements.get(TYPE+"-editor")) customElements.define(TYPE+"-editor",VaccumCardAnimationsEditor);
   if(!customElements.get(LEGACY_TYPE)) customElements.define(LEGACY_TYPE,class extends VaccumCardAnimations {});
   if(!customElements.get(LEGACY_TYPE+"-editor")) customElements.define(LEGACY_TYPE+"-editor",class extends VaccumCardAnimationsEditor {});
+  if(!customElements.get(RECOVERY_TYPE)) customElements.define(RECOVERY_TYPE,class extends VaccumCardAnimations {
+    static getConfigElement() {return document.createElement(RECOVERY_TYPE+"-editor");}
+  });
+  if(!customElements.get(RECOVERY_TYPE+"-editor")) customElements.define(RECOVERY_TYPE+"-editor",class extends VaccumCardAnimationsEditor {});
   window.customCards=window.customCards || [];
-  // Replace the old picker entry if an earlier bundle was already loaded.
   window.customCards=window.customCards.filter(card=>card.type !== LEGACY_TYPE);
-  if(!window.customCards.some(card=>card.type === TYPE)) window.customCards.push({type:TYPE,name:CARD_NAME,description:"Aspirador em visão frontal, cenário personalizável, temas, controles e som de seleção.",preview:true,getEntitySuggestion:(hass,entityId)=>entityId.startsWith("vacuum.") ? {entity:entityId} : null});
+  const suggestion=(hass,entityId)=>entityId.startsWith("vacuum.") ? {entity:entityId} : null;
+  if(!window.customCards.some(card=>card.type === TYPE)) window.customCards.push({type:TYPE,name:CARD_NAME,description:"Aspirador em visão frontal, cenário personalizável, temas, controles e som de seleção.",preview:true,getEntitySuggestion:suggestion});
+  if(versionConflict) {
+    if(!window.customCards.some(card=>card.type === RECOVERY_TYPE)) window.customCards.push({
+      type:RECOVERY_TYPE,name:CARD_NAME+" (versão corrigida)",
+      description:"Alternativa temporária quando um recurso antigo impede carregar o card atualizado.",
+      preview:true,getEntitySuggestion:suggestion
+    });
+    console.warn("[Vaccum card-animations] Um recurso antigo registrou o card primeiro. Em Configurações > Painéis > Recursos, remova /hacsfiles/Card-aspirador-/Card-aspirador-.js e mantenha apenas /hacsfiles/vacuum-card-home-assistant/Card-aspirador-.js. Como alternativa temporária, use custom:"+RECOVERY_TYPE+".");
+  }
 })();

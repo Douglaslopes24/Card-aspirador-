@@ -468,6 +468,15 @@ check(card._front.frame===null,'system reduced motion');media.matches=false;
  check(preview._mode==='docked'&&demoStatus.textContent==='Na base','preview finishes return');
  vm.runInContext(readProject(productionFilename),context);
  check(context.window.customCards.length===1,'reload does not duplicate registration');
+ // Simulate an obsolete HACS resource registering the card before the new one.
+ const outdated=class OutdatedCard extends HTMLElement {};
+ registry.set('vaccum-card-animations',outdated);
+ vm.runInContext(readProject(productionFilename),context);
+ const recovery=registry.get('vaccum-card-animations-v151');
+ check(registry.get('vaccum-card-animations')===outdated,'old registered type is not redefined');
+ check(!!recovery && recovery.VCA_VERSION==='1.5.1','recovery type uses the updated renderer');
+ check(registry.get('vaccum-card-animations-v151-editor') && recovery.getConfigElement().tagName==='vaccum-card-animations-v151-editor','recovery type uses the updated editor');
+ check(context.window.customCards.some(c=>c.type==='vaccum-card-animations-v151'),'version conflict exposes recovery card in picker');
  preview.disconnectedCallback();
  console.log(`${checks} functional checks passed. Browser layout has not been rendered by these tests.`);
 })().catch(e=>{console.error(e);process.exit(1);});
